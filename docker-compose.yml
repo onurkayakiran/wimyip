@@ -1,0 +1,151 @@
+services:
+  mongodb:
+    # NOT: mongo:5.0+ CPU'da AVX destegi zorunlu kilar; AVX'siz eski
+    # sunucularda (orn. Pentium/Celeron G-serisi, bazi eski Xeon'lar)
+    # "Illegal instruction" ile coker. Bu projede 5.0+'a ozgu hicbir ozellik
+    # kullanilmadigi icin (duz CRUD/index/aggregate), AVX'siz makinelerde
+    # .env'de MONGO_IMAGE_TAG=4.4 (AVX gerektirmeyen son buyuk surum)
+    # ayarlanabilir. Varsayilan 7'dir (AVX'i olan makineler icin).
+    image: mongo:${MONGO_IMAGE_TAG:-7}
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_INITDB_DATABASE: ${MONGO_DB}
+    volumes:
+      - mongo_data:/data/db
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    healthcheck:
+      # mongo:7 "mongosh" icerir, mongo:4.4 sadece eski "mongo" kabugunu
+      # icerir - ikisiyle de calissin diye once mongosh, olmazsa mongo dener.
+      test: ["CMD-SHELL", "mongosh --eval 'db.adminCommand(\"ping\")' || mongo --eval 'db.adminCommand(\"ping\")'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      MONGO_DB: ${MONGO_DB}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+
+  worker:
+    build: ./backend
+    restart: unless-stopped
+    # Varsayilan concurrency host CPU sayisina esittir (bu makinede 14) - bu
+    # gereksiz yuksekti ve baslangicta ayni index'leri kurmaya calisan alt
+    # sureclerin birbirine girmesine yol aciyordu (index olusturma artik
+    # yarisa dayanikli, o sorun cozuldu). AMA concurrency=2 cok DUSUK
+    # cikti: bu kuyrukta 6 farkli periyodik gorev var (rdap-asn, rdap-prefix,
+    # bgp, peeringdb, ct-log, dns-history) - concurrency=2 iken ct-log gibi
+    # sik calisan (2 dk) bir gorev sureki bir slotu kapatip digerlerinin
+    # (5 dk'lik) aclikta kalmasina (saatlerce calismamasina) yol acti.
+    # Gorevler kendi icinde seri/hiz-sinirli olsa da, BIRBIRINDEN BAGIMSIZ
+    # 6 gorevin ayni anda calisabilmesi gerekiyor.
+    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=${WORKER_CONCURRENCY:-6}
+    env_file: .env
+    environment:
+      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      MONGO_DB: ${MONGO_DB}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  beat:
+    build: ./backend
+    restart: unless-stopped
+    command: celery -A app.tasks.celery_app beat --loglevel=info
+    env_file: .env
+    environment:
+      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      MONGO_DB: ${MONGO_DB}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  unbound:
+    image: mvance/unbound:latest
+    restart: unless-stopped
+    volumes:
+      - unbound_data:/opt/unbound/etc/unbound
+
+  ptr-worker:
+    build: ./backend
+    restart: unless-stopped
+    # PTR taramasi ayri bir kuyruktan (ptr) tuketilir, boylece yuksek hacimli
+    # DNS taramasi RIR/RDAP/BGP/PeeringDB gorevlerini bloklamaz
+    command: celery -A app.tasks.celery_app worker --loglevel=info -Q ptr --concurrency=${PTR_WORKER_CONCURRENCY:-1}
+    env_file: .env
+    environment:
+      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
+      MONGO_DB: ${MONGO_DB}
+      PTR_RESOLVER_HOST: unbound
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      unbound:
+        condition: service_started
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+
+  backup:
+    build:
+      context: ./backup
+      args:
+        MONGO_IMAGE_TAG: ${MONGO_IMAGE_TAG:-7}
+    restart: unless-stopped
+    volumes:
+      # NOT: host'a dogrudan bind-mount (./backups:/backups) KULLANMIYORUZ.
+      # macOS'ta Docker Desktop'in "Desktop" klasoru altindaki yollara canli
+      # dosya paylasimi (bind-mount) icin ayrica izin verilmesi gerekiyor ve
+      # bu, projenin herhangi bir yerde calismasi (tasinabilirlik) hedefiyle
+      # celisen, kullaniciya ozel/manuel bir kurulum adimi olurdu. Bunun yerine
+      # yedekler Docker'in kendi yonettigi bir named volume'da tutulur;
+      # scripts/export_backups.sh ile istendiginde `docker cp` kullanilarak
+      # (bu islem soz konusu izne takilmiyor) host'taki ./backups klasorune
+      # cikarilabilir. Ayni sebeple backup-loop.sh de bind-mount yerine
+      # ./backup/Dockerfile ile image icine gomulur.
+      - backup_data:/backups
+    environment:
+      MONGO_ROOT_USER: ${MONGO_ROOT_USER}
+      MONGO_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_DB: ${MONGO_DB}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_COUNT: ${BACKUP_RETENTION_COUNT:-7}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+
+volumes:
+  mongo_data:
+  redis_data:
+  unbound_data:
+  backup_data:
