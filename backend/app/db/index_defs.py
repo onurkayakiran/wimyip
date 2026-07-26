@@ -24,6 +24,8 @@ INDEX_DEFS: list[tuple[str, object, dict]] = [
     ("domain_ns_history", "nameserver", {}),
     ("nameserver_ip_history", [("nameserver", 1), ("ip", 1)], {"unique": True}),
     ("nameserver_ip_history", "ip", {}),
+    ("domain_mx_history", [("domain", 1), ("exchange", 1)], {"unique": True}),
+    ("domain_txt_history", [("domain", 1), ("value_hash", 1)], {"unique": True}),
     ("ptr_records", [("ip", 1), ("ptr_hostname", 1)], {"unique": True}),
     ("ptr_records", "ip", {}),
     (

@@ -110,6 +110,41 @@ export default function DomainDetail() {
         />
       </section>
 
+      <section className="card">
+        <h2>MX Geçmişi</h2>
+        <HistoryTable
+          emptyText="Henüz MX geçmişi toplanmadı."
+          columns={[
+            { key: 'priority', label: 'Öncelik', render: (r) => r.priority },
+            { key: 'exchange', label: 'Sunucu', render: (r) => <span className="mono">{r.exchange}</span> },
+            { key: 'first_seen', label: 'İlk Görülme', render: (r) => formatDate(r.first_seen) },
+            { key: 'last_seen', label: 'Son Görülme', render: (r) => formatDate(r.last_seen) },
+          ]}
+          rows={history?.mx_history}
+        />
+      </section>
+
+      <section className="card">
+        <h2>TXT Geçmişi</h2>
+        <HistoryTable
+          emptyText="Henüz TXT geçmişi toplanmadı."
+          columns={[
+            {
+              key: 'value',
+              label: 'Değer',
+              render: (r) => (
+                <span className="mono" title={r.value}>
+                  {r.value.length > 60 ? `${r.value.slice(0, 60)}…` : r.value}
+                </span>
+              ),
+            },
+            { key: 'first_seen', label: 'İlk Görülme', render: (r) => formatDate(r.first_seen) },
+            { key: 'last_seen', label: 'Son Görülme', render: (r) => formatDate(r.last_seen) },
+          ]}
+          rows={history?.txt_history}
+        />
+      </section>
+
       {info.ptr_records?.length > 0 && (
         <section className="card">
           <h2>Bu Hostname'e İşaret Eden PTR Kayıtları</h2>

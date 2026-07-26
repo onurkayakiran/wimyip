@@ -55,7 +55,19 @@ async def get_domain_dns_history(domain: str):
     ns_cursor = db.domain_ns_history.find({"domain": domain}).sort("first_seen", 1)
     ns_history = [_clean(d) async for d in ns_cursor]
 
-    return {"domain": domain, "ip_history": ip_history, "ns_history": ns_history}
+    mx_cursor = db.domain_mx_history.find({"domain": domain}).sort("first_seen", 1)
+    mx_history = [_clean(d) async for d in mx_cursor]
+
+    txt_cursor = db.domain_txt_history.find({"domain": domain}).sort("first_seen", 1)
+    txt_history = [_clean(d) async for d in txt_cursor]
+
+    return {
+        "domain": domain,
+        "ip_history": ip_history,
+        "ns_history": ns_history,
+        "mx_history": mx_history,
+        "txt_history": txt_history,
+    }
 
 
 @router.post("/domains/{domain}/refresh-dns")

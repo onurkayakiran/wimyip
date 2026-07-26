@@ -1,7 +1,8 @@
+import hashlib
 from datetime import datetime, timezone
 
 from app.db.sync_client import get_sync_db
-from app.ingestion.dns_client import resolve_records
+from app.ingestion.dns_client import resolve_mx_records, resolve_records, resolve_txt_records
 
 _A_TYPES = (("A", 4), ("AAAA", 6))
 
@@ -15,9 +16,9 @@ def _record_ips(name: str) -> list[tuple[str, int]]:
 
 
 def sync_domain_dns(domain: str) -> dict:
-    """Bir domain'in A/AAAA/NS kayitlarini yeniden cozer. Her gozlemlenen
-    deger (ip veya nameserver) kendi first_seen/last_seen'iyle ayri bir
-    satir olarak tutulur - boylece gecmis asla ezilmez, sadece hangi
+    """Bir domain'in A/AAAA/NS/MX/TXT kayitlarini yeniden cozer. Her gozlemlenen
+    deger (ip, nameserver, mx exchange veya txt degeri) kendi first_seen/last_seen'iyle
+    ayri bir satir olarak tutulur - boylece gecmis asla ezilmez, sadece hangi
     degerlerin hala 'guncel' oldugu last_seen'e bakilarak anlasilir.
     Ayrica her NS hostname'inin KENDI A/AAAA kaydi da nameserver_ip_history'ye
     islenir (nameserver'lar da zamanla IP degistirebilir).
@@ -72,4 +73,35 @@ def sync_domain_dns(domain: str) -> dict:
                 upsert=True,
             )
 
-    return {"domain": domain, "ips": ip_count, "nameservers": ns_count}
+    mx_count = 0
+    for priority, exchange in resolve_mx_records(domain):
+        db.domain_mx_history.update_one(
+            {"domain": domain, "exchange": exchange},
+            {
+                "$set": {"last_seen": now, "priority": priority},
+                "$setOnInsert": {"domain": domain, "exchange": exchange, "first_seen": now},
+            },
+            upsert=True,
+        )
+        mx_count += 1
+
+    txt_count = 0
+    for value in resolve_txt_records(domain):
+        value_hash = hashlib.sha256(value.encode()).hexdigest()
+        db.domain_txt_history.update_one(
+            {"domain": domain, "value_hash": value_hash},
+            {
+                "$set": {"last_seen": now, "value": value},
+                "$setOnInsert": {"domain": domain, "value_hash": value_hash, "first_seen": now},
+            },
+            upsert=True,
+        )
+        txt_count += 1
+
+    return {
+        "domain": domain,
+        "ips": ip_count,
+        "nameservers": ns_count,
+        "mx": mx_count,
+        "txt": txt_count,
+    }

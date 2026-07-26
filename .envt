@@ -1,0 +1,15 @@
+# MongoDB
+#MONGO_IMAGE_TAG=4.4
+MONGO_ROOT_USER=ipasn_admin
+MONGO_ROOT_PASSWORD=change_me_please123123.!!
+MONGO_DB=ipasn
+MONGO_PORT=127.0.0.1:27017
+
+# Port mapping (host tarafinda)
+BACKEND_PORT=127.0.0.1:8001
+FRONTEND_PORT=127.0.0.1:3001
+
+# Domain taramasi - suankine gore 5x hizlandirildi
+PTR_BATCH_SIZE=2500
+PTR_RATE_LIMIT_SECONDS=0.02
+CT_BATCH_SIZE=2500

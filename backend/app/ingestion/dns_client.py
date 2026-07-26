@@ -51,3 +51,21 @@ def resolve_records(name: str, rdtype: str) -> list[str]:
         return sorted({str(r).rstrip(".") for r in answer})
     except _SOFT_ERRORS:
         return []
+
+
+def resolve_mx_records(name: str) -> list[tuple[int, str]]:
+    """MX kayitlarini (priority, exchange) ciftleri olarak doner."""
+    try:
+        answer = get_resolver().resolve(name, "MX")
+        return sorted({(r.preference, str(r.exchange).rstrip(".")) for r in answer})
+    except _SOFT_ERRORS:
+        return []
+
+
+def resolve_txt_records(name: str) -> list[str]:
+    """TXT kayitlarini (parcalari birlestirilmis) metin listesi olarak doner."""
+    try:
+        answer = get_resolver().resolve(name, "TXT")
+        return sorted({b"".join(r.strings).decode("utf-8", "replace") for r in answer})
+    except _SOFT_ERRORS:
+        return []
