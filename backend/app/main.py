@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import asns, domains, health, lookup, nameservers, prefixes, search, stats
+from app.api.routes import admin, asns, domains, health, lookup, nameservers, prefixes, search, stats
 from app.db.mongo import ensure_indexes
 
 
@@ -30,3 +30,4 @@ app.include_router(stats.router, prefix="/api")
 app.include_router(domains.router, prefix="/api")
 app.include_router(nameservers.router, prefix="/api")
 app.include_router(search.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")

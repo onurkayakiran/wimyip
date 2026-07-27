@@ -6,35 +6,35 @@ self-hosted, tamamen Docker üzerinde çalışan bir araç.
 
 ## Hızlı Başlangıç
 
+Bu proje kendi MongoDB'sini çalıştırmaz — harici (kendi sunucunuz, Atlas
+veya başka bir yönetilen servis) bir MongoDB'ye bağlanır.
+
 ```bash
-cp .env.example .env       # gerekirse şifreleri değiştirin
+cp .env.example .env       # MONGO_URI'yi kendi MongoDB sunucunuza göre doldurun
 docker compose up -d --build
 ```
 
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:8000/api/health
 
-### Eski sunucular (AVX desteği olmayan CPU)
+### Harici MongoDB Bağlantısı
 
-MongoDB 5.0+ CPU'da AVX desteği ister. Sunucunuzda `mongodb` container'ı
-şu hatayla çöküyorsa:
-
-```
-WARNING: MongoDB 5.0+ requires a CPU with AVX support...
-Illegal instruction (core dumped)
-```
-
-`.env` dosyasında şunu ayarlayıp yeniden başlatın:
+`.env` içindeki `MONGO_URI` tam bağlantı string'i olarak girilir, örn.:
 
 ```bash
-MONGO_IMAGE_TAG=4.4
-```
-```bash
-docker compose up -d --build
+MONGO_URI=mongodb://kullanici:sifre@mongo-sunucunuz:27017/ipasn?authSource=admin
 ```
 
-(4.4, AVX gerektirmeyen son büyük MongoDB sürümüdür; bu projede 5.0+'a
-özgü hiçbir özellik kullanılmadığı için tam uyumludur.)
+Hedef sunucuda bu kullanıcı ve `MONGO_DB` ile aynı isimdeki veritabanı
+(veya en azından o kullanıcının yazma yetkisi) önceden oluşturulmuş
+olmalı — bu proje `MONGO_INITDB_ROOT_*` ile otomatik kullanıcı/veritabanı
+oluşturmaz, sadece bağlanır. Koleksiyonlar ve index'ler ilk yazımda
+uygulama tarafından otomatik oluşturulur (bkz. `backend/app/db/index_defs.py`).
+
+`MONGO_IMAGE_TAG` değişkeni artık yerel bir mongod için değil, `backup`
+servisinin `mongodump`/`mongorestore` araçlarını harici sunucunuzun
+MongoDB sürümüyle uyumlu tutmak için kullanılır (örn. sunucunuz eski/AVX
+desteklemeyen bir MongoDB 4.4 çalıştırıyorsa burayı da `4.4` yapın).
 
 ## RIR verisini manuel senkronize etme
 

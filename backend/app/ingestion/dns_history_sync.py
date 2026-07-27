@@ -1,4 +1,5 @@
 import hashlib
+import ipaddress
 from datetime import datetime, timezone
 
 from app.db.sync_client import get_sync_db
@@ -41,10 +42,16 @@ def sync_domain_dns(domain: str) -> dict:
 
     ip_count = 0
     for ip, version in _record_ips(domain):
+        set_fields = {"last_seen": now, "ip_version": version}
+        if version == 4:
+            # ulke bazli prefix araligi sorgulari (apex-domain taramasi) icin -
+            # sadece ileriye donuk doldurulur, mevcut kayitlar zamanla bu
+            # dongude yeniden yazildikca organik olarak guncellenir.
+            set_fields["ip_int"] = int(ipaddress.IPv4Address(ip))
         db.domain_ip_history.update_one(
             {"domain": domain, "ip": ip},
             {
-                "$set": {"last_seen": now, "ip_version": version},
+                "$set": set_fields,
                 "$setOnInsert": {"domain": domain, "ip": ip, "first_seen": now},
             },
             upsert=True,

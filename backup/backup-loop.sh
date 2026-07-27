@@ -6,13 +6,32 @@ RETENTION="${BACKUP_RETENTION_COUNT:-7}"
 
 echo "[backup] baslatildi - her ${INTERVAL} saniyede bir yedek alinacak, son ${RETENTION} yedek tutulacak"
 
+# Container her basladiginda (fresh start/restart) script en bastan calisir -
+# bu yuzden dogrudan donguye girip hemen backup almak yerine, en son yedekten
+# bu yana INTERVAL kadar sure gecmemisse kalan sureyi bekleyip oyle giriyoruz.
+# Boylece sik restart (deploy/test sirasinda) gereksiz backup'a yol acmiyor;
+# yedek yoksa (ilk kurulum) veya INTERVAL zaten dolmussa (container uzun sure
+# kapali kalmis) hemen alinir.
+LATEST=$(ls -1t /backups/ipasn_backup_*.archive.gz 2>/dev/null | head -1 || true)
+if [ -n "$LATEST" ]; then
+  LAST_MTIME=$(stat -c %Y "$LATEST")
+  NOW=$(date +%s)
+  ELAPSED=$((NOW - LAST_MTIME))
+  REMAINING=$((INTERVAL - ELAPSED))
+  if [ "$REMAINING" -gt 0 ]; then
+    echo "[backup] son yedek ${ELAPSED} sn once alinmis, ${REMAINING} sn sonra devam edilecek"
+    sleep "$REMAINING"
+  fi
+fi
+
 while true; do
   TIMESTAMP=$(date -u +%Y%m%d_%H%M%S)
   OUT="/backups/ipasn_backup_${TIMESTAMP}.archive.gz"
   echo "[backup] $(date -u '+%Y-%m-%d %H:%M:%S UTC') yedekleme basliyor: ${OUT}"
 
   if mongodump \
-    --uri="mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin" \
+    --uri="${MONGO_URI}" \
+    --db="${MONGO_DB}" \
     --archive --gzip >"${OUT}"; then
     echo "[backup] tamamlandi: ${OUT} ($(du -h "${OUT}" | cut -f1))"
     # en yeni RETENTION kadar yedegi birakip gerisini sil

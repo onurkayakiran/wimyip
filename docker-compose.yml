@@ -1,46 +1,39 @@
 services:
-  mongodb:
-    # NOT: mongo:5.0+ CPU'da AVX destegi zorunlu kilar; AVX'siz eski
-    # sunucularda (orn. Pentium/Celeron G-serisi, bazi eski Xeon'lar)
-    # "Illegal instruction" ile coker. Bu projede 5.0+'a ozgu hicbir ozellik
-    # kullanilmadigi icin (duz CRUD/index/aggregate), AVX'siz makinelerde
-    # .env'de MONGO_IMAGE_TAG=4.4 (AVX gerektirmeyen son buyuk surum)
-    # ayarlanabilir. Varsayilan 7'dir (AVX'i olan makineler icin).
-    image: mongo:${MONGO_IMAGE_TAG:-7}
-    restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
-      MONGO_INITDB_DATABASE: ${MONGO_DB}
-    volumes:
-      - mongo_data:/data/db
-    ports:
-      - "${MONGO_PORT:-27017}:27017"
-    healthcheck:
-      # mongo:7 "mongosh" icerir, mongo:4.4 sadece eski "mongo" kabugunu
-      # icerir - ikisiyle de calissin diye once mongosh, olmazsa mongo dener.
-      test: ["CMD-SHELL", "mongosh --eval 'db.adminCommand(\"ping\")' || mongo --eval 'db.adminCommand(\"ping\")'"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   redis:
     image: redis:7-alpine
     restart: unless-stopped
     volumes:
       - redis_data:/data
 
+  control:
+    build: ./control
+    restart: unless-stopped
+    # SADECE bu servis docker.sock'a erisir - backend/frontend'in hicbiri
+    # dogrudan erismiyor. Disariya hicbir port acmiyor, sadece compose'un
+    # internal agindan (CONTROL_SERVICE_TOKEN ile) erisilebilir.
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      CONTROL_SERVICE_TOKEN: ${CONTROL_SERVICE_TOKEN}
+
   backend:
     build: ./backend
     restart: unless-stopped
     env_file: .env
     environment:
-      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
-      MONGO_DB: ${MONGO_DB}
+      CONTROL_SERVICE_URL: http://control:8080
+      CONTROL_SERVICE_TOKEN: ${CONTROL_SERVICE_TOKEN}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    # MONGO_URI ayni host'ta ama AYRI bir compose projesinde calisan bir
+    # mongo'yu (orn. mongo-external/) isaret ediyorsa "localhost" container'in
+    # kendi loopback'i olur, mongo'ya ulasmaz. host-gateway, container'dan
+    # host makinenin kendisine giden gercek bir yol sagliyor.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
-      mongodb:
-        condition: service_healthy
       redis:
+        condition: service_started
+      control:
         condition: service_started
     ports:
       - "${BACKEND_PORT:-8000}:8000"
@@ -60,12 +53,9 @@ services:
     # 6 gorevin ayni anda calisabilmesi gerekiyor.
     command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=${WORKER_CONCURRENCY:-6}
     env_file: .env
-    environment:
-      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
-      MONGO_DB: ${MONGO_DB}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
-      mongodb:
-        condition: service_healthy
       redis:
         condition: service_started
 
@@ -74,12 +64,9 @@ services:
     restart: unless-stopped
     command: celery -A app.tasks.celery_app beat --loglevel=info
     env_file: .env
-    environment:
-      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
-      MONGO_DB: ${MONGO_DB}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
-      mongodb:
-        condition: service_healthy
       redis:
         condition: service_started
 
@@ -97,15 +84,50 @@ services:
     command: celery -A app.tasks.celery_app worker --loglevel=info -Q ptr --concurrency=${PTR_WORKER_CONCURRENCY:-1}
     env_file: .env
     environment:
-      MONGO_URI: mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongodb:27017/${MONGO_DB}?authSource=admin
-      MONGO_DB: ${MONGO_DB}
       PTR_RESOLVER_HOST: unbound
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
-      mongodb:
-        condition: service_healthy
       redis:
         condition: service_started
       unbound:
+        condition: service_started
+
+  ptr-worker-country:
+    build: ./backend
+    restart: unless-stopped
+    # TARGET_COUNTRY'ye (varsayilan TR) ait RIR-tahsisli IP bloklarini tarayip
+    # uzerlerinde calisan domainleri kesfeder - global ptr-worker'dan bagimsiz
+    # kendi kuyrugu (ptr-country) ve cursor'u (ptr_sweep_country:<ulke>) var.
+    # Baska bir ulke icin bu servis bloğu farkli TARGET_COUNTRY/kuyruk adiyla
+    # kopyalanabilir.
+    command: celery -A app.tasks.celery_app worker --loglevel=info -Q ptr-country --concurrency=1
+    env_file: .env
+    environment:
+      PTR_RESOLVER_HOST: unbound
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      redis:
+        condition: service_started
+      unbound:
+        condition: service_started
+
+  apex-worker-country:
+    build: ./backend
+    restart: unless-stopped
+    # TARGET_COUNTRY'ye ait IP'lerde barinan, zaten domain_ip_history'de
+    # bilinen domainlerden SADECE ana (apex, subdomain olmayan) olanlari
+    # hedefleyip sync_domain_dns ile A/AAAA/NS/MX/TXT'sini tazeler.
+    # ptr-worker-country'den ve dns_history_sync'ten tamamen bagimsiz, kendi
+    # kuyrugu (apex-country) ve cursor'u var. IP taramasi yapmadigi icin
+    # unbound'a bagimli degil.
+    command: celery -A app.tasks.celery_app worker --loglevel=info -Q apex-country --concurrency=1
+    env_file: .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      redis:
         condition: service_started
 
   frontend:
@@ -135,17 +157,14 @@ services:
       # ./backup/Dockerfile ile image icine gomulur.
       - backup_data:/backups
     environment:
-      MONGO_ROOT_USER: ${MONGO_ROOT_USER}
-      MONGO_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD}
+      MONGO_URI: ${MONGO_URI}
       MONGO_DB: ${MONGO_DB}
       BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
       BACKUP_RETENTION_COUNT: ${BACKUP_RETENTION_COUNT:-7}
-    depends_on:
-      mongodb:
-        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
 volumes:
-  mongo_data:
   redis_data:
   unbound_data:
   backup_data:

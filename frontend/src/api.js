@@ -42,3 +42,20 @@ export const getNameserverHistory = (ns) => request(`/nameservers/${encodeURICom
 export const getNameserverDomains = (ns) => request(`/nameservers/${encodeURIComponent(ns)}/domains`)
 
 export const search = (q) => request(`/search?q=${encodeURIComponent(q)}`)
+
+export const adminLogin = (password) =>
+  request('/admin/login', { method: 'POST', headers: { 'X-Admin-Password': password } })
+
+export const getAdminServices = (password) =>
+  request('/admin/services', { headers: { 'X-Admin-Password': password } })
+
+export const getAdminServiceLogs = (password, service, tail = 200) =>
+  request(`/admin/services/${encodeURIComponent(service)}/logs?tail=${tail}`, {
+    headers: { 'X-Admin-Password': password },
+  })
+
+export const restartAdminService = (password, service) =>
+  request(`/admin/services/${encodeURIComponent(service)}/restart`, {
+    method: 'POST',
+    headers: { 'X-Admin-Password': password },
+  })

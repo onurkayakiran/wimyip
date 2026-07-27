@@ -8,8 +8,8 @@
 #   ./scripts/restart.sh --build                 # tum servisleri yeniden derleyip restart et
 #   ./scripts/restart.sh --build backend worker   # sadece bunlari yeniden derleyip restart et
 #
-# Servisler: mongodb, redis, backend, worker, beat, unbound, ptr-worker,
-#            frontend, backup
+# Servisler: redis, backend, worker, beat, unbound, ptr-worker,
+#            ptr-worker-country, apex-worker-country, frontend, backup, control
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

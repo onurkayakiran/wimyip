@@ -41,6 +41,8 @@ celery_app.conf.broker_connection_retry_on_startup = True
 # ptr-worker container'ina) yonlendirilir; diger gorevleri bloklamaz.
 celery_app.conf.task_routes = {
     "ingestion.ptr_sweep": {"queue": "ptr"},
+    "ingestion.ptr_sweep_country": {"queue": "ptr-country"},
+    "ingestion.domain_apex_scan_country": {"queue": "apex-country"},
 }
 celery_app.conf.beat_schedule = {
     "daily-rir-sync": {
@@ -70,6 +72,14 @@ celery_app.conf.beat_schedule = {
     "ptr-sweep": {
         "task": "ingestion.ptr_sweep",
         "schedule": settings.ptr_sweep_interval_seconds,
+    },
+    "ptr-sweep-country": {
+        "task": "ingestion.ptr_sweep_country",
+        "schedule": settings.country_sweep_interval_seconds,
+    },
+    "domain-apex-scan-country": {
+        "task": "ingestion.domain_apex_scan_country",
+        "schedule": settings.apex_country_sweep_interval_seconds,
     },
     "dns-history-sync": {
         "task": "ingestion.dns_history_sync",
@@ -125,6 +135,30 @@ def ptr_sweep_task():
     from app.ingestion.ptr_batch import run_ptr_sweep_batch
 
     return run_ptr_sweep_batch()
+
+
+@celery_app.task(name="ingestion.ptr_sweep_country")
+def ptr_sweep_country_task():
+    from app.ingestion.ptr_batch import run_ptr_sweep_batch
+
+    return run_ptr_sweep_batch(
+        job_name=f"ptr_sweep_country:{settings.target_country}",
+        country=settings.target_country,
+        batch_size=settings.country_ptr_batch_size,
+        rate_limit_seconds=settings.country_ptr_rate_limit_seconds,
+    )
+
+
+@celery_app.task(name="ingestion.domain_apex_scan_country")
+def domain_apex_scan_country_task():
+    from app.ingestion.domain_apex_batch import run_domain_apex_batch
+
+    return run_domain_apex_batch(
+        country=settings.target_country,
+        batch_size=settings.apex_country_batch_size,
+        domains_per_prefix=settings.apex_country_domains_per_prefix,
+        rate_limit_seconds=settings.apex_country_rate_limit_seconds,
+    )
 
 
 @celery_app.task(name="ingestion.dns_history_sync")

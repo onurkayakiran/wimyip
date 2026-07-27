@@ -177,6 +177,50 @@ button:disabled {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 100;
+}
+
+.modal-box {
+  background: #1a1d24;
+  border-radius: 8px;
+  padding: 1.25rem;
+  width: 100%;
+  max-width: 720px;
+  max-height: 85vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.modal-box input[type='text'] {
+  padding: 0.6rem 0.8rem;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #0f1115;
+  color: inherit;
+}
+
+.log-viewer {
+  max-height: 420px;
+  overflow-y: auto;
+  background: #0f1115;
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
 .table-scroll {
   overflow-x: auto;
 }

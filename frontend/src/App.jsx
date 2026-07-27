@@ -1,5 +1,6 @@
 import { Link, Route, Routes } from 'react-router-dom'
 import SearchBar from './components/SearchBar'
+import AdminPage from './pages/AdminPage'
 import AsnDetail from './pages/AsnDetail'
 import DomainDetail from './pages/DomainDetail'
 import Home from './pages/Home'
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/nameserver/:nameserver" element={<NameserverDetail />} />
           <Route path="/prefix/*" element={<PrefixDetail />} />
           <Route path="/search" element={<SearchResults />} />
+          <Route path="/admin" element={<AdminPage />} />
         </Routes>
       </main>
     </div>

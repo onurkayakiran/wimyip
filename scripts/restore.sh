@@ -14,11 +14,9 @@ if [ -f .env ]; then
   set +a
 fi
 
-docker compose exec -T mongodb mongorestore \
-  --username "${MONGO_ROOT_USER}" \
-  --password "${MONGO_ROOT_PASSWORD}" \
-  --authenticationDatabase admin \
-  --db "${MONGO_DB}" \
+docker compose exec -T backup mongorestore \
+  --uri="${MONGO_URI}" \
+  --db="${MONGO_DB}" \
   --archive --gzip --drop < "$1"
 
 echo "Geri yükleme tamamlandı."
