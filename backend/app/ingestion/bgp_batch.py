@@ -2,7 +2,7 @@ import logging
 
 from app.core.config import settings
 from app.ingestion.batch_runner import run_resumable_batch
-from app.ingestion.bgp_sync import sync_asn_announcements
+from app.ingestion.bgp_sync import sync_asn_announcements, sync_asn_peering
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +16,7 @@ def enrich_bgp_batch() -> dict:
 
     def process_one(doc):
         sync_asn_announcements(doc["asn"])
+        sync_asn_peering(doc["asn"])
 
     return run_resumable_batch(
         "bgp_sync:asns",

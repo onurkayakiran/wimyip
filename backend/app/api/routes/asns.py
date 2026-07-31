@@ -88,9 +88,21 @@ async def refresh_asn_bgp(asn: int):
     if not doc:
         raise HTTPException(status_code=404, detail="ASN bulunamadı")
 
-    from app.ingestion.bgp_sync import sync_asn_announcements
+    from app.ingestion.bgp_sync import sync_asn_announcements, sync_asn_peering
 
-    return await run_in_threadpool(sync_asn_announcements, asn)
+    announcements = await run_in_threadpool(sync_asn_announcements, asn)
+    peering = await run_in_threadpool(sync_asn_peering, asn)
+    return {**announcements, "peering": peering}
+
+
+@router.get("/asns/{asn}/peers")
+async def get_asn_peers(asn: int, limit: int = Query(200, le=1000), offset: int = 0):
+    db = get_db()
+    query = {"asn": asn}
+    cursor = db.asn_peering_history.find(query).sort("power", -1).skip(offset).limit(limit)
+    items = [_clean(doc) async for doc in cursor]
+    total = await db.asn_peering_history.count_documents(query)
+    return {"asn": asn, "total": total, "items": items}
 
 
 @router.get("/asns/{asn}/peeringdb")

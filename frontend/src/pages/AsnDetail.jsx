@@ -4,6 +4,7 @@ import {
   getAsn,
   getAsnHistory,
   getAsnPeeringDb,
+  getAsnPeers,
   getAsnPrefixes,
   refreshAsnBgp,
   refreshAsnPeeringDb,
@@ -18,6 +19,7 @@ export default function AsnDetail() {
   const [info, setInfo] = useState(null)
   const [history, setHistory] = useState(null)
   const [prefixes, setPrefixes] = useState(null)
+  const [peers, setPeers] = useState(null)
   const [peeringdb, setPeeringdb] = useState(null)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(null)
@@ -27,6 +29,7 @@ export default function AsnDetail() {
     getAsn(asn).then(setInfo).catch((e) => setError(e.message))
     getAsnHistory(asn).then((h) => setHistory(h.history)).catch(() => {})
     getAsnPrefixes(asn).then((p) => setPrefixes(p.items)).catch(() => {})
+    getAsnPeers(asn).then((p) => setPeers(p.items)).catch(() => {})
     getAsnPeeringDb(asn).then(setPeeringdb).catch(() => {})
   }
 
@@ -34,6 +37,7 @@ export default function AsnDetail() {
     setInfo(null)
     setHistory(null)
     setPrefixes(null)
+    setPeers(null)
     setPeeringdb(null)
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -155,6 +159,36 @@ export default function AsnDetail() {
             { key: 'last_seen', label: 'Son Görülme', render: (r) => formatDate(r.last_seen) },
           ]}
           rows={prefixes}
+        />
+      </section>
+
+      <section className="card">
+        <h2>BGP Komşuları (Peering)</h2>
+        <p className="muted">
+          RIPE NCC'nin RIS route collector'larının BGP tablolarında gözlemlediği komşu ASN'ler — gerçek
+          peering'in herkese açık, kimlik doğrulama gerektirmeyen yaklaşık karşılığı. "Önceki hop"
+          genelde upstream/transit ya da peer, "sonraki hop" genelde müşteri ya da peer ilişkisine işaret
+          eder. "Güç" değeri kaç farklı gözlem noktasının bu komşuluğu gördüğünü gösterir.
+        </p>
+        <HistoryTable
+          emptyText="Henüz peering verisi toplanmadı."
+          columns={[
+            {
+              key: 'neighbour_asn',
+              label: 'Komşu ASN',
+              render: (r) => <Link to={`/asn/${r.neighbour_asn}`}>AS{r.neighbour_asn}</Link>,
+            },
+            {
+              key: 'direction',
+              label: 'Yön',
+              render: (r) =>
+                r.direction === 'left' ? 'Önceki hop' : r.direction === 'right' ? 'Sonraki hop' : 'Belirsiz',
+            },
+            { key: 'power', label: 'Güç', render: (r) => r.power ?? '-' },
+            { key: 'first_seen', label: 'İlk Görülme', render: (r) => formatDate(r.first_seen) },
+            { key: 'last_seen', label: 'Son Görülme', render: (r) => formatDate(r.last_seen) },
+          ]}
+          rows={peers}
         />
       </section>
     </div>

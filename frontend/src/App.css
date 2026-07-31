@@ -177,6 +177,31 @@ button:disabled {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+.my-ip-banner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  background: #1a1d24;
+  border: 1px solid #3a3f4a;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.15s;
+}
+
+.my-ip-banner:hover {
+  border-color: #4f7cff;
+}
+
+.my-ip-value {
+  font-size: 1.6rem;
+  font-weight: 600;
+  color: #6d93ff;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;

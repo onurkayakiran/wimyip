@@ -1,19 +1,28 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getStats } from '../api'
+import { getMyIp, getStats } from '../api'
 import JobStatusPanel from '../components/JobStatusPanel'
 import { ErrorBlock, Loading } from '../components/StatusBlock'
 
 export default function Home() {
   const [stats, setStats] = useState(null)
+  const [myIp, setMyIp] = useState(null)
   const [error, setError] = useState(null)
 
   useEffect(() => {
     getStats().then(setStats).catch((e) => setError(e.message))
+    getMyIp().then((r) => setMyIp(r.ip)).catch(() => {})
   }, [])
 
   return (
     <div>
+      {myIp && (
+        <Link to={`/ip/${myIp}`} className="my-ip-banner">
+          <span className="muted">IP Adresiniz</span>
+          <span className="my-ip-value mono">{myIp}</span>
+        </Link>
+      )}
+
       <section className="stats">
         {stats ? (
           <>

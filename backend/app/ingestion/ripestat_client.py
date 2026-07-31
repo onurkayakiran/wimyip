@@ -27,3 +27,20 @@ def fetch_prefix_overview(prefix: str) -> dict | None:
     if resp.status_code != 200:
         return None
     return resp.json()
+
+
+def fetch_asn_neighbours(asn: int) -> dict | None:
+    """RIS route collector'larinin BGP tablolarinda gozlemledigi, bir ASN'e
+    komsu ASN'leri dondurur (gercek peering'in herkese acik, kimlik dogrulama
+    gerektirmeyen yaklasik karsiligi). Her komsu 'left' (bu ASN'e giden yolda
+    onceki hop - upstream/peer) veya 'right' (sonraki hop - musteri/peer)
+    olarak isaretlenir. Key/auth gerekmez.
+    """
+    resp = requests.get(
+        f"{RIPESTAT_BASE}/asn-neighbours/data.json",
+        params={"resource": f"AS{asn}"},
+        timeout=30,
+    )
+    if resp.status_code != 200:
+        return None
+    return resp.json()

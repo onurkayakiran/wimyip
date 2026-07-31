@@ -11,6 +11,7 @@ async function request(path, options) {
 
 export const getStats = () => request('/stats')
 export const getStatus = () => request('/status')
+export const getMyIp = () => request('/whoami')
 
 export const lookupIp = (ip) => request(`/lookup/ip/${encodeURIComponent(ip)}`)
 export const refreshIpBgp = (ip) =>
@@ -26,6 +27,7 @@ export const refreshPrefixWhois = (cidr) => request(`/prefixes/${cidr}/refresh`,
 export const getAsn = (asn) => request(`/asns/${asn}`)
 export const getAsnHistory = (asn) => request(`/asns/${asn}/history`)
 export const getAsnPrefixes = (asn, limit = 200) => request(`/asns/${asn}/prefixes?limit=${limit}`)
+export const getAsnPeers = (asn, limit = 200) => request(`/asns/${asn}/peers?limit=${limit}`)
 export const getAsnPeeringDb = (asn) => request(`/asns/${asn}/peeringdb`).catch(() => null)
 export const refreshAsnWhois = (asn) => request(`/asns/${asn}/refresh`, { method: 'POST' })
 export const refreshAsnBgp = (asn) => request(`/asns/${asn}/refresh-bgp`, { method: 'POST' })

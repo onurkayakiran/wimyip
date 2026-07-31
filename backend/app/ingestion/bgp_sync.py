@@ -3,7 +3,11 @@ import logging
 from datetime import datetime, timezone
 
 from app.db.sync_client import get_sync_db
-from app.ingestion.ripestat_client import fetch_announced_prefixes, fetch_prefix_overview
+from app.ingestion.ripestat_client import (
+    fetch_announced_prefixes,
+    fetch_asn_neighbours,
+    fetch_prefix_overview,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +79,53 @@ def sync_asn_announcements(asn: int) -> dict:
         written += 1
 
     return {"asn": asn, "prefixes": written}
+
+
+def sync_asn_peering(asn: int) -> dict:
+    """RIPEstat'in RIS route collector'larinda gozlemledigi BGP komsuluklarini
+    (gercek peering'in herkese acik yaklasik karsiligi) asn_peering_history'ye
+    isler. 'left' = bu ASN'e giden yolda onceki hop olarak gorulen
+    (upstream/peer), 'right' = sonraki hop olarak gorulen (musteri/peer),
+    'uncertain' = yon net degil. Ayni (asn, neighbour_asn, direction) ucunun
+    ilk/son gorulme zamani ve power/peer sayilari birikir - boylece hangi
+    komsuluklarin hala aktif oldugu last_seen'e bakilarak anlasilir.
+    """
+    db = get_sync_db()
+    payload = fetch_asn_neighbours(asn)
+    if payload is None:
+        return {"asn": asn, "neighbours": 0, "error": "fetch_failed"}
+
+    data = payload.get("data") or {}
+    now = datetime.now(timezone.utc)
+
+    written = 0
+    for entry in data.get("neighbours", []) or []:
+        neighbour_asn = entry.get("asn")
+        direction = entry.get("type")
+        if neighbour_asn is None or not direction:
+            continue
+
+        db.asn_peering_history.update_one(
+            {"asn": asn, "neighbour_asn": neighbour_asn, "direction": direction},
+            {
+                "$set": {
+                    "last_seen": now,
+                    "power": entry.get("power"),
+                    "v4_peers": entry.get("v4_peers"),
+                    "v6_peers": entry.get("v6_peers"),
+                },
+                "$setOnInsert": {
+                    "asn": asn,
+                    "neighbour_asn": neighbour_asn,
+                    "direction": direction,
+                    "first_seen": now,
+                },
+            },
+            upsert=True,
+        )
+        written += 1
+
+    return {"asn": asn, "neighbours": written}
 
 
 def sync_ip_bgp(resource: str) -> dict:

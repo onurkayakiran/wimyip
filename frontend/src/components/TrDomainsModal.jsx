@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { listDomains } from '../api'
 import { formatDate } from './HistoryTable'
@@ -7,28 +7,41 @@ import { ErrorBlock, Loading } from './StatusBlock'
 const LIMIT = 50
 
 export default function TrDomainsModal({ onClose }) {
-  const [query, setQuery] = useState('')
+  const [inputValue, setInputValue] = useState('')
+  const [submittedQuery, setSubmittedQuery] = useState('')
   const [offset, setOffset] = useState(0)
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
+  const [searching, setSearching] = useState(false)
+  const requestId = useRef(0)
 
   function load() {
-    listDomains({ source: 'tr_apex_scan', q: query, limit: LIMIT, offset })
+    const id = ++requestId.current
+    setSearching(true)
+    listDomains({ source: 'tr_apex_scan', q: submittedQuery, limit: LIMIT, offset })
       .then((res) => {
+        if (id !== requestId.current) return // gec kalmis/eski cevap - yok say
         setData(res)
         setError(null)
       })
-      .catch((e) => setError(e.message))
+      .catch((e) => {
+        if (id !== requestId.current) return
+        setError(e.message)
+      })
+      .finally(() => {
+        if (id === requestId.current) setSearching(false)
+      })
   }
 
   useEffect(() => {
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, offset])
+  }, [submittedQuery, offset])
 
-  function handleSearchChange(e) {
+  function handleSubmit(e) {
+    e.preventDefault()
     setOffset(0)
-    setQuery(e.target.value)
+    setSubmittedQuery(inputValue)
   }
 
   const total = data?.total ?? 0
@@ -44,13 +57,18 @@ export default function TrDomainsModal({ onClose }) {
           <button onClick={onClose}>Kapat</button>
         </div>
 
-        <input
-          type="text"
-          placeholder="Domain ara..."
-          value={query}
-          onChange={handleSearchChange}
-          autoFocus
-        />
+        <form onSubmit={handleSubmit} className="search">
+          <input
+            type="text"
+            placeholder="Domain ara..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            autoFocus
+          />
+          <button type="submit" disabled={searching}>
+            {searching ? 'Aranıyor...' : 'Ara'}
+          </button>
+        </form>
 
         <ErrorBlock message={error} />
 
