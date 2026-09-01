@@ -17,7 +17,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: ptr-worker-country
-          image: ghcr.io/onurkayakiran/wimyip-backend:d282887a92cb5e45b55e72a1b42952a3595d84a5
+          image: ghcr.io/onurkayakiran/wimyip-backend:017262891839599a88cab37b9ff78054f794e860
           command: ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "-Q", "ptr-country", "--concurrency=1"]
           envFrom:
             - configMapRef:
