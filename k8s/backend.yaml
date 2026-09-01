@@ -17,7 +17,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: backend
-          image: ghcr.io/onurkayakiran/wimyip-backend:36525f8600ef3286f643450b2c0025817b4336ca
+          image: ghcr.io/onurkayakiran/wimyip-backend:23506b75a4a16c7391301a7ceabeae6d89d6b555
           ports:
             - containerPort: 8000
           envFrom:
