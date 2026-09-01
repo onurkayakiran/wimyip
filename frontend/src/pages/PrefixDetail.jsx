@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useParams } from 'react-router-dom'
 import { getPrefix, getPrefixHistory, refreshPrefixWhois } from '../api'
 import HistoryTable, { formatDate } from '../components/HistoryTable'
 import { ErrorBlock, Loading } from '../components/StatusBlock'
 
 export default function PrefixDetail() {
+  const { t } = useTranslation()
   const params = useParams()
   const cidr = params['*']
 
@@ -49,34 +51,32 @@ export default function PrefixDetail() {
 
       {!prefix.exact_match && (
         <p className="muted">
-          Bu tam aralık için ayrı bir RIR kaydı yok (muhtemelen BGP'de görülen daha
-          spesifik bir alt-blok) — içinde bulunduğu RIR bloğu gösteriliyor:{' '}
-          <span className="mono">{prefix.cidr}</span>
+          {t('prefix.not_exact_match_notice')} <span className="mono">{prefix.cidr}</span>
         </p>
       )}
 
       <section className="card">
-        <h2>RIR Tahsisi</h2>
+        <h2>{t('common_detail.rir_allocation')}</h2>
         <table>
           <tbody>
             <tr>
-              <th>CIDR</th>
+              <th>{t('common_detail.cidr')}</th>
               <td className="mono">{prefix.cidr}</td>
             </tr>
             <tr>
-              <th>RIR</th>
+              <th>{t('common_detail.rir')}</th>
               <td>{prefix.rir}</td>
             </tr>
             <tr>
-              <th>Ülke</th>
+              <th>{t('common_detail.country')}</th>
               <td>{prefix.country || '-'}</td>
             </tr>
             <tr>
-              <th>Durum</th>
+              <th>{t('common_detail.status')}</th>
               <td>{prefix.status}</td>
             </tr>
             <tr>
-              <th>Tahsis Tarihi</th>
+              <th>{t('common_detail.alloc_date')}</th>
               <td>{prefix.alloc_date || '-'}</td>
             </tr>
           </tbody>
@@ -85,18 +85,18 @@ export default function PrefixDetail() {
 
       <section className="card">
         <div className="card-header">
-          <h2>Sahiplik Geçmişi (RDAP)</h2>
+          <h2>{t('common_detail.ownership_history')}</h2>
           <button onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? 'Sorgulanıyor...' : 'Şimdi Sorgula'}
+            {refreshing ? t('common_detail.querying') : t('common_detail.query_now')}
           </button>
         </div>
         <HistoryTable
-          emptyText="Henüz whois verisi toplanmadı — 'Şimdi Sorgula' ile hemen çekebilirsiniz."
+          emptyText={t('common_detail.no_whois_data_query_now')}
           columns={[
-            { key: 'org_name', label: 'Organizasyon' },
-            { key: 'handle', label: 'Handle' },
-            { key: 'first_seen', label: 'İlk Görülme', render: (r) => formatDate(r.first_seen) },
-            { key: 'last_seen', label: 'Son Görülme', render: (r) => formatDate(r.last_seen) },
+            { key: 'org_name', label: t('common_detail.org') },
+            { key: 'handle', label: t('common_detail.handle') },
+            { key: 'first_seen', label: t('common_detail.first_seen'), render: (r) => formatDate(r.first_seen) },
+            { key: 'last_seen', label: t('common_detail.last_seen'), render: (r) => formatDate(r.last_seen) },
           ]}
           rows={history}
         />

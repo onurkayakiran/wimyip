@@ -1,22 +1,22 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getStatus } from '../api'
 import { Loading } from './StatusBlock'
 
 function StatusDot({ healthy }) {
-  return (
-    <span className={`status-dot ${healthy ? 'status-ok' : 'status-bad'}`} title={healthy ? 'Sağlıklı' : 'Sorun var'} />
-  )
-}
-
-function formatAge(seconds) {
-  if (seconds == null) return '-'
-  if (seconds < 60) return `${Math.round(seconds)} sn önce`
-  if (seconds < 3600) return `${Math.round(seconds / 60)} dk önce`
-  return `${Math.round(seconds / 3600)} sa önce`
+  return <span className={`status-dot ${healthy ? 'status-ok' : 'status-bad'}`} />
 }
 
 export default function JobStatusPanel({ refreshMs = 20000 }) {
+  const { t } = useTranslation()
   const [status, setStatus] = useState(null)
+
+  function formatAge(seconds) {
+    if (seconds == null) return '-'
+    if (seconds < 60) return t('jobStatus.seconds_ago', { count: Math.round(seconds) })
+    if (seconds < 3600) return t('jobStatus.minutes_ago', { count: Math.round(seconds / 60) })
+    return t('jobStatus.hours_ago', { count: Math.round(seconds / 3600) })
+  }
 
   function load() {
     getStatus()
@@ -34,10 +34,10 @@ export default function JobStatusPanel({ refreshMs = 20000 }) {
   return (
     <section className="card">
       <div className="card-header">
-        <h2>Arka Plan Görevleri</h2>
+        <h2>{t('jobStatus.title')}</h2>
         {status && (
           <span className={status.healthy_count === status.total_count ? 'badge badge-ok' : 'badge badge-bad'}>
-            {status.healthy_count}/{status.total_count} sağlıklı
+            {t('jobStatus.healthy', { healthy: status.healthy_count, total: status.total_count })}
           </span>
         )}
       </div>
@@ -47,11 +47,11 @@ export default function JobStatusPanel({ refreshMs = 20000 }) {
             <thead>
               <tr>
                 <th></th>
-                <th>Görev</th>
-                <th>Cursor</th>
-                <th>Son Çalışma</th>
-                <th>Son Batch (başarılı/başarısız)</th>
-                <th>Not</th>
+                <th>{t('jobStatus.task')}</th>
+                <th>{t('jobStatus.cursor')}</th>
+                <th>{t('jobStatus.last_run')}</th>
+                <th>{t('jobStatus.last_batch')}</th>
+                <th>{t('jobStatus.note')}</th>
               </tr>
             </thead>
             <tbody>
@@ -68,9 +68,9 @@ export default function JobStatusPanel({ refreshMs = 20000 }) {
                   </td>
                   <td className="muted">
                     {job.last_error
-                      ? `Hata: ${job.last_error}`
+                      ? t('jobStatus.note_error', { error: job.last_error })
                       : job.stale
-                        ? 'Beklenenden uzun süredir güncellenmedi'
+                        ? t('jobStatus.note_stale')
                         : ''}
                   </td>
                 </tr>

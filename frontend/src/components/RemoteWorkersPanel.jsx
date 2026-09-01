@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Trans, useTranslation } from 'react-i18next'
 import {
   createRemoteWorkerToken,
   getRemoteWorkerStatus,
@@ -12,17 +13,21 @@ import { ErrorBlock, Loading } from './StatusBlock'
 const AVAILABLE_QUEUES = ['ptr_sweep', 'dns_history', 'dns_history_apex', 'port_scan']
 
 function StatusDot({ healthy }) {
+  const { t } = useTranslation()
   return (
-    <span className={`status-dot ${healthy ? 'status-ok' : 'status-bad'}`} title={healthy ? 'Sağlıklı' : 'Sorun var'} />
+    <span
+      className={`status-dot ${healthy ? 'status-ok' : 'status-bad'}`}
+      title={healthy ? t('remoteWorkers.healthy') : t('remoteWorkers.unhealthy')}
+    />
   )
 }
 
-function formatAge(value) {
+function formatAge(value, t) {
   if (!value) return '-'
   const seconds = (Date.now() - new Date(value).getTime()) / 1000
-  if (seconds < 60) return `${Math.round(seconds)} sn önce`
-  if (seconds < 3600) return `${Math.round(seconds / 60)} dk önce`
-  return `${Math.round(seconds / 3600)} sa önce`
+  if (seconds < 60) return t('jobStatus.seconds_ago', { count: Math.round(seconds) })
+  if (seconds < 3600) return t('jobStatus.minutes_ago', { count: Math.round(seconds / 60) })
+  return t('jobStatus.hours_ago', { count: Math.round(seconds / 3600) })
 }
 
 function isHealthy(lastSeenAt) {
@@ -31,6 +36,7 @@ function isHealthy(lastSeenAt) {
 }
 
 function CreateTokenForm({ password, onCreated }) {
+  const { t } = useTranslation()
   const [label, setLabel] = useState('')
   const [queues, setQueues] = useState([])
   const [submitting, setSubmitting] = useState(false)
@@ -58,7 +64,7 @@ function CreateTokenForm({ password, onCreated }) {
     <form className="search" onSubmit={handleSubmit} style={{ flexWrap: 'wrap', gap: '0.5rem' }}>
       <input
         type="text"
-        placeholder="Lokasyon etiketi (örn. almanya-vps-1)"
+        placeholder={t('remoteWorkers.location_label_placeholder')}
         value={label}
         onChange={(e) => setLabel(e.target.value)}
       />
@@ -69,7 +75,7 @@ function CreateTokenForm({ password, onCreated }) {
         </label>
       ))}
       <button type="submit" disabled={submitting || !label || queues.length === 0}>
-        {submitting ? 'Oluşturuluyor...' : 'Token Oluştur'}
+        {submitting ? t('remoteWorkers.creating') : t('remoteWorkers.create_token')}
       </button>
       <ErrorBlock message={error} />
     </form>
@@ -77,6 +83,7 @@ function CreateTokenForm({ password, onCreated }) {
 }
 
 export default function RemoteWorkersPanel({ password, refreshMs = 20000 }) {
+  const { t } = useTranslation()
   const [status, setStatus] = useState(null)
   const [tokens, setTokens] = useState(null)
   const [error, setError] = useState(null)
@@ -101,7 +108,7 @@ export default function RemoteWorkersPanel({ password, refreshMs = 20000 }) {
   }, [])
 
   function handleRevoke(token) {
-    if (!window.confirm(`"${token.label}" token'ı iptal edilsin mi? Bu, o worker'ın erişimini anında keser.`)) return
+    if (!window.confirm(t('remoteWorkers.confirm_revoke', { label: token.label }))) return
     setRevoking(token.id)
     revokeRemoteWorkerToken(password, token.id)
       .then(load)
@@ -112,19 +119,19 @@ export default function RemoteWorkersPanel({ password, refreshMs = 20000 }) {
   return (
     <section className="card">
       <div className="card-header">
-        <h2>Uzak Workerlar</h2>
+        <h2>{t('remoteWorkers.title')}</h2>
       </div>
       <ErrorBlock message={error} />
 
       {newToken && (
         <div className="card" style={{ marginBottom: '0.75rem', border: '1px solid var(--accent, #888)' }}>
           <p>
-            <strong>{newToken.label}</strong> için token oluşturuldu — bu token bir daha gösterilmeyecek, şimdi kopyalayın:
+            <Trans i18nKey="remoteWorkers.token_created_notice" values={{ label: newToken.label }} components={{ bold: <strong /> }} />
           </p>
           <pre className="log-viewer" style={{ userSelect: 'all' }}>
             {newToken.token}
           </pre>
-          <button onClick={() => setNewToken(null)}>Kapat</button>
+          <button onClick={() => setNewToken(null)}>{t('common.close')}</button>
         </div>
       )}
 
@@ -137,18 +144,18 @@ export default function RemoteWorkersPanel({ password, refreshMs = 20000 }) {
               <thead>
                 <tr>
                   <th></th>
-                  <th>Etiket</th>
-                  <th>Kuyruk</th>
-                  <th>Son Görülme</th>
-                  <th>Son Batch (bulundu)</th>
-                  <th>Toplam Claim/Submit</th>
+                  <th>{t('remoteWorkers.label')}</th>
+                  <th>{t('remoteWorkers.queue')}</th>
+                  <th>{t('remoteWorkers.last_seen')}</th>
+                  <th>{t('remoteWorkers.last_batch_found')}</th>
+                  <th>{t('remoteWorkers.total_claim_submit')}</th>
                 </tr>
               </thead>
               <tbody>
                 {status.length === 0 && (
                   <tr>
                     <td colSpan={6} className="muted">
-                      Henüz uzak worker görülmedi.
+                      {t('remoteWorkers.no_workers_yet')}
                     </td>
                   </tr>
                 )}
@@ -159,7 +166,7 @@ export default function RemoteWorkersPanel({ password, refreshMs = 20000 }) {
                     </td>
                     <td className="mono">{w.label}</td>
                     <td className="mono">{w.queue}</td>
-                    <td>{formatAge(w.last_seen_at)}</td>
+                    <td>{formatAge(w.last_seen_at, t)}</td>
                     <td>{w.last_batch_found ?? '-'}</td>
                     <td>
                       {w.total_claimed ?? 0} / {w.total_submitted ?? 0}
@@ -170,15 +177,15 @@ export default function RemoteWorkersPanel({ password, refreshMs = 20000 }) {
             </table>
           </div>
 
-          <h3 style={{ marginTop: '1rem' }}>Token'lar</h3>
+          <h3 style={{ marginTop: '1rem' }}>{t('remoteWorkers.tokens')}</h3>
           <div className="table-scroll">
             <table>
               <thead>
                 <tr>
-                  <th>Etiket</th>
-                  <th>İzinli Kuyruklar</th>
-                  <th>Oluşturulma</th>
-                  <th>Durum</th>
+                  <th>{t('remoteWorkers.label')}</th>
+                  <th>{t('remoteWorkers.allowed_queues')}</th>
+                  <th>{t('remoteWorkers.created')}</th>
+                  <th>{t('remoteWorkers.status')}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -186,24 +193,24 @@ export default function RemoteWorkersPanel({ password, refreshMs = 20000 }) {
                 {tokens.length === 0 && (
                   <tr>
                     <td colSpan={5} className="muted">
-                      Henüz token oluşturulmadı.
+                      {t('remoteWorkers.no_tokens_yet')}
                     </td>
                   </tr>
                 )}
-                {tokens.map((t) => (
-                  <tr key={t.id}>
-                    <td className="mono">{t.label}</td>
-                    <td className="mono">{(t.queues || []).join(', ')}</td>
-                    <td>{formatAge(t.created_at)}</td>
+                {tokens.map((tok) => (
+                  <tr key={tok.id}>
+                    <td className="mono">{tok.label}</td>
+                    <td className="mono">{(tok.queues || []).join(', ')}</td>
+                    <td>{formatAge(tok.created_at, t)}</td>
                     <td>
-                      <span className={`badge ${t.revoked_at ? 'badge-bad' : 'badge-ok'}`}>
-                        {t.revoked_at ? 'İptal edildi' : 'Aktif'}
+                      <span className={`badge ${tok.revoked_at ? 'badge-bad' : 'badge-ok'}`}>
+                        {tok.revoked_at ? t('remoteWorkers.revoked') : t('remoteWorkers.active')}
                       </span>
                     </td>
                     <td>
-                      {!t.revoked_at && (
-                        <button onClick={() => handleRevoke(t)} disabled={revoking === t.id}>
-                          {revoking === t.id ? 'İptal ediliyor...' : 'İptal Et'}
+                      {!tok.revoked_at && (
+                        <button onClick={() => handleRevoke(tok)} disabled={revoking === tok.id}>
+                          {revoking === tok.id ? t('remoteWorkers.revoking') : t('remoteWorkers.revoke')}
                         </button>
                       )}
                     </td>
@@ -213,7 +220,7 @@ export default function RemoteWorkersPanel({ password, refreshMs = 20000 }) {
             </table>
           </div>
 
-          <h3 style={{ marginTop: '1rem' }}>Yeni Token</h3>
+          <h3 style={{ marginTop: '1rem' }}>{t('remoteWorkers.new_token')}</h3>
           <CreateTokenForm password={password} onCreated={(result) => { setNewToken(result); load() }} />
         </>
       )}

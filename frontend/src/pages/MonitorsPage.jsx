@@ -1,14 +1,15 @@
 import { Fragment, useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createMonitor, deleteMonitor, getMonitor, listMonitors } from '../api'
 import { formatDate } from '../components/HistoryTable'
 import { ErrorBlock, Loading } from '../components/StatusBlock'
 import useAuth from '../hooks/useAuth'
 
+// HTTP/HTTPS/PING teknik protokol adlari - dile gore cevrilmiyor.
 const CHECK_LABELS = { http: 'HTTP', https: 'HTTPS', ping: 'PING' }
-const STATUS_LABELS = { up: 'Çalışıyor', down: 'Kesintide', unknown: 'Bilinmiyor' }
 const REFRESH_MS = 15000
 
-function formatDuration(sinceIso) {
+function formatDuration(sinceIso, t) {
   if (!sinceIso) return null
   const ms = Date.now() - new Date(sinceIso).getTime()
   if (ms < 0) return null
@@ -16,9 +17,9 @@ function formatDuration(sinceIso) {
   const days = Math.floor(totalMinutes / 1440)
   const hours = Math.floor((totalMinutes % 1440) / 60)
   const minutes = totalMinutes % 60
-  if (days > 0) return `${days} gün, ${hours} sa`
-  if (hours > 0) return `${hours} sa, ${minutes} dk`
-  return `${minutes} dk`
+  if (days > 0) return t('monitors.duration_days_hours', { days, hours })
+  if (hours > 0) return t('monitors.duration_hours_minutes', { hours, minutes })
+  return t('monitors.duration_minutes', { minutes })
 }
 
 function StatusIcon({ status }) {
@@ -27,10 +28,15 @@ function StatusIcon({ status }) {
 }
 
 function UptimeBars({ results }) {
+  const { t } = useTranslation()
   const bars = results && results.length ? results : []
   return (
     <div className="uptime-bars">
-      {bars.length === 0 && <span className="muted" style={{ fontSize: '0.8em' }}>Henüz veri yok</span>}
+      {bars.length === 0 && (
+        <span className="muted" style={{ fontSize: '0.8em' }}>
+          {t('monitors.no_history_yet')}
+        </span>
+      )}
       {bars.map((ok, i) => (
         <span key={i} className={`uptime-bar ${ok ? 'bar-ok' : 'bar-bad'}`} />
       ))}
@@ -39,6 +45,7 @@ function UptimeBars({ results }) {
 }
 
 function MonitorDetail({ token, monitorId }) {
+  const { t } = useTranslation()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
 
@@ -59,18 +66,18 @@ function MonitorDetail({ token, monitorId }) {
       <table>
         <thead>
           <tr>
-            <th>Zaman</th>
-            <th>Check</th>
-            <th>Durum</th>
-            <th>Yanıt Süresi</th>
-            <th>Hata</th>
+            <th>{t('monitors.history_time')}</th>
+            <th>{t('monitors.history_check')}</th>
+            <th>{t('monitors.history_status')}</th>
+            <th>{t('monitors.history_response_time')}</th>
+            <th>{t('monitors.history_error')}</th>
           </tr>
         </thead>
         <tbody>
           {results.length === 0 && (
             <tr>
               <td colSpan={5} className="muted">
-                Henüz sonuç yok.
+                {t('monitors.no_history_yet')}
               </td>
             </tr>
           )}
@@ -79,7 +86,9 @@ function MonitorDetail({ token, monitorId }) {
               <td className="muted">{formatDate(r.checked_at)}</td>
               <td className="mono">{CHECK_LABELS[r.check_type] || r.check_type}</td>
               <td>
-                <span className={`badge ${r.ok ? 'badge-ok' : 'badge-bad'}`}>{r.ok ? 'OK' : 'Başarısız'}</span>
+                <span className={`badge ${r.ok ? 'badge-ok' : 'badge-bad'}`}>
+                  {r.ok ? t('monitors.ok') : t('monitors.failed')}
+                </span>
               </td>
               <td className="mono">{r.response_time_ms != null ? `${r.response_time_ms} ms` : '-'}</td>
               <td className="muted">{r.error || '-'}</td>
@@ -92,6 +101,7 @@ function MonitorDetail({ token, monitorId }) {
 }
 
 function NewMonitorForm({ token, onCreated, onClose }) {
+  const { t } = useTranslation()
   const [target, setTarget] = useState('')
   const [checks, setChecks] = useState({ http: true, https: false, ping: false })
   const [interval, setIntervalValue] = useState(300)
@@ -119,13 +129,13 @@ function NewMonitorForm({ token, onCreated, onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="card-header">
-          <h2>Yeni Monitör</h2>
-          <button onClick={onClose}>Kapat</button>
+          <h2>{t('monitors.new_monitor')}</h2>
+          <button onClick={onClose}>{t('common.close')}</button>
         </div>
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
           <input
             type="text"
-            placeholder="Domain veya IP (örn. example.com)"
+            placeholder={t('monitors.target_placeholder')}
             value={target}
             onChange={(e) => setTarget(e.target.value)}
             autoFocus
@@ -139,7 +149,7 @@ function NewMonitorForm({ token, onCreated, onClose }) {
             ))}
           </div>
           <label className="muted" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            Kontrol sıklığı:
+            {t('monitors.frequency')}:
             <input
               type="number"
               min={60}
@@ -148,10 +158,10 @@ function NewMonitorForm({ token, onCreated, onClose }) {
               onChange={(e) => setIntervalValue(e.target.value)}
               style={{ width: '90px' }}
             />
-            sn
+            {t('monitors.interval_seconds')}
           </label>
           <button type="submit" disabled={submitting || !target.trim() || !Object.values(checks).some(Boolean)}>
-            {submitting ? 'Ekleniyor...' : 'Monitör Ekle'}
+            {submitting ? t('monitors.adding') : t('monitors.add_monitor')}
           </button>
           <ErrorBlock message={error} />
         </form>
@@ -161,7 +171,8 @@ function NewMonitorForm({ token, onCreated, onClose }) {
 }
 
 export default function MonitorsPage() {
-  const { token, isAuthenticated, logout } = useAuth()
+  const { t } = useTranslation()
+  const { token } = useAuth()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [showAddForm, setShowAddForm] = useState(false)
@@ -171,6 +182,12 @@ export default function MonitorsPage() {
   const [openMenuId, setOpenMenuId] = useState(null)
   const [deleting, setDeleting] = useState(null)
 
+  const STATUS_LABELS = {
+    up: t('monitors.status_up'),
+    down: t('monitors.status_down'),
+    unknown: t('monitors.status_unknown'),
+  }
+
   function load() {
     listMonitors(token)
       .then(setData)
@@ -178,12 +195,11 @@ export default function MonitorsPage() {
   }
 
   useEffect(() => {
-    if (!isAuthenticated) return
     load()
     const interval = setInterval(load, REFRESH_MS)
     return () => clearInterval(interval)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated])
+  }, [])
 
   // Her (monitor, check tipi) kombinasyonunu ayrı bir satıra düzleştiriyoruz.
   const rows = useMemo(() => {
@@ -209,16 +225,8 @@ export default function MonitorsPage() {
     return [...filtered].sort((a, b) => (rank[a.status] ?? 1) - (rank[b.status] ?? 1))
   }, [data, search, downFirst])
 
-  if (!isAuthenticated) {
-    return (
-      <section className="card">
-        <p>Monitörlerinizi görmek için giriş yapmalısınız.</p>
-      </section>
-    )
-  }
-
   function handleDelete(row) {
-    if (!window.confirm(`"${row.target}" monitörü (tüm check'leriyle birlikte) silinsin mi?`)) return
+    if (!window.confirm(t('monitors.confirm_delete', { target: row.target }))) return
     setOpenMenuId(null)
     setDeleting(row.monitorId)
     deleteMonitor(token, row.monitorId)
@@ -231,24 +239,22 @@ export default function MonitorsPage() {
     <>
       <div className="card-header">
         <h1 style={{ fontSize: '1.4rem', margin: 0 }}>
-          Monitörler<span style={{ color: '#4f7cff' }}>.</span>
+          {t('monitors.title')}
+          <span style={{ color: '#4f7cff' }}>.</span>
         </h1>
-        <span>
-          <button onClick={() => setShowAddForm(true)}>+ Yeni Monitör</button>{' '}
-          <button onClick={logout}>Çıkış</button>
-        </span>
+        <button onClick={() => setShowAddForm(true)}>+ {t('monitors.new_monitor')}</button>
       </div>
 
       <section className="card">
         <div className="monitors-toolbar">
           <input
             type="text"
-            placeholder="Hedefe göre ara..."
+            placeholder={t('monitors.search_placeholder')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
           <button onClick={() => setDownFirst((v) => !v)}>
-            {downFirst ? '✓ Önce Kesintide Olanlar' : 'Sırala: Önce Kesintide Olanlar'}
+            {downFirst ? t('monitors.sort_down_first_active') : t('monitors.sort_down_first')}
           </button>
         </div>
 
@@ -258,9 +264,9 @@ export default function MonitorsPage() {
           <Loading />
         ) : (
           <div className="monitor-list">
-            {rows.length === 0 && <p className="muted">Henüz monitör eklemediniz.</p>}
+            {rows.length === 0 && <p className="muted">{t('monitors.no_monitors_yet')}</p>}
             {rows.map((row) => {
-              const duration = formatDuration(row.status_since)
+              const duration = formatDuration(row.status_since, t)
               return (
                 <Fragment key={row.rowId}>
                   <div
@@ -278,7 +284,7 @@ export default function MonitorsPage() {
                         {duration ? ` — ${duration}` : ''}
                       </div>
                     </div>
-                    <div className="muted monitor-row-interval">↻ {row.interval_seconds} sn</div>
+                    <div className="muted monitor-row-interval">↻ {row.interval_seconds} {t('monitors.interval_seconds')}</div>
                     <UptimeBars results={row.recent_results} />
                     <div className="monitor-row-pct">
                       {row.uptime_pct != null ? `${row.uptime_pct}%` : '-'}
@@ -290,7 +296,7 @@ export default function MonitorsPage() {
                       {openMenuId === row.rowId && (
                         <div className="dropdown-menu">
                           <button onClick={() => handleDelete(row)} disabled={deleting === row.monitorId}>
-                            {deleting === row.monitorId ? 'Siliniyor...' : 'Sil'}
+                            {deleting === row.monitorId ? t('common.deleting') : t('common.delete')}
                           </button>
                         </div>
                       )}

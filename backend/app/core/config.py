@@ -67,12 +67,17 @@ class Settings(BaseSettings):
     # count_documents({}) her istekte tam tarama yapip 504'e yol aciyordu.
     stats_refresh_interval_seconds: float = 300.0
 
-    # Admin panelinden tetiklenen SYN port taramasi (worker-portscan
-    # container'i uzerinden, bkz. remote-api/app/queues/port_scan.py).
-    # portscan_max_hosts: yanlislikla cok genis bir blok (orn. /16) taratilmasini
-    # onleyen guvenlik siniri - is olusturma bu deger asilirsa reddedilir.
+    # IP Subnet taramasi (SYN port scan, worker-portscan container'i
+    # uzerinden - bkz. remote-api/app/queues/port_scan.py). Artik admin-only
+    # DEGIL, sadece "premium" plandaki kullanicilara acik (bkz.
+    # backend/app/api/routes/scans.py). portscan_max_hosts: yanlislikla cok
+    # genis bir blok (orn. /16) taratilmasini onleyen guvenlik siniri.
+    # max_active_scans_per_user: bir kullanicinin ayni anda kuyrukta/calisir
+    # durumda tutabilecegi en fazla is sayisi - kotuye kullanimi sinirlamak
+    # icin (tek basina yeterli degil ama savunmanin bir katmani).
     portscan_default_delay_seconds: float = 5.0
     portscan_max_hosts: int = 256
+    max_active_scans_per_user: int = 3
 
     # Kullanici paneli (kayit/giris) - JWT tabanli, cookie/session DEGIL
     # (Authorization: Bearer header, mevcut CORS allow_origins=["*"] ile
@@ -82,8 +87,11 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 10080  # 7 gun, tek access token, refresh yok
 
     # Domain monitoring (HTTP/HTTPS/Ping) - kullanici basina kaynak
-    # tuketimini sinirlamak icin makul varsayilanlar.
-    max_monitors_per_user: int = 20
+    # tuketimini sinirlamak icin plan bazli (free/premium) limitler.
+    # Admin bu degerleri (ve premium'a kimin gectigini) k8s ConfigMap/.env
+    # uzerinden ayarlar - bkz. /admin/users/{id}/plan.
+    free_max_monitors: int = 5
+    premium_max_monitors: int = 100
     min_monitor_interval_seconds: int = 60
     default_monitor_interval_seconds: int = 300
     monitor_check_batch_size: int = 50

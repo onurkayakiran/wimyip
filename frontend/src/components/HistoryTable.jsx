@@ -1,16 +1,20 @@
+import i18n from '../i18n'
+
 function formatDate(value) {
   if (!value) return '-'
   try {
-    return new Date(value).toLocaleString('tr-TR')
+    // i18n.language kullanicinin secili diline gore tarih formatliyor
+    // (orn. en-US vs tr-TR vs de-DE farkli gun/ay sirasi kullanir).
+    return new Date(value).toLocaleString(i18n.language)
   } catch {
     return value
   }
 }
 
 // columns: [{ key, label, render? }]
-export default function HistoryTable({ columns, rows, emptyText = 'Kayıt yok' }) {
+export default function HistoryTable({ columns, rows, emptyText }) {
   if (!rows || rows.length === 0) {
-    return <p className="muted">{emptyText}</p>
+    return <p className="muted">{emptyText ?? i18n.t('historyTable.no_rows')}</p>
   }
 
   return (

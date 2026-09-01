@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { getNameserverDomains, getNameserverHistory } from '../api'
 import HistoryTable, { formatDate } from '../components/HistoryTable'
 import { ErrorBlock, Loading } from '../components/StatusBlock'
 
 export default function NameserverDetail() {
+  const { t } = useTranslation()
   const { nameserver } = useParams()
 
   const [history, setHistory] = useState(null)
@@ -31,35 +33,35 @@ export default function NameserverDetail() {
       <h1 className="mono">{nameserver}</h1>
 
       <section className="card">
-        <h2>IP Geçmişi</h2>
+        <h2>{t('nameserver.ip_history')}</h2>
         <HistoryTable
-          emptyText="Bu nameserver için henüz IP geçmişi toplanmadı."
+          emptyText={t('nameserver.no_ip_history')}
           columns={[
             {
               key: 'ip',
               label: 'IP',
               render: (r) => <Link to={`/ip/${r.ip}`}>{r.ip}</Link>,
             },
-            { key: 'ip_version', label: 'Versiyon', render: (r) => `IPv${r.ip_version}` },
-            { key: 'first_seen', label: 'İlk Görülme', render: (r) => formatDate(r.first_seen) },
-            { key: 'last_seen', label: 'Son Görülme', render: (r) => formatDate(r.last_seen) },
+            { key: 'ip_version', label: t('domain.version'), render: (r) => `IPv${r.ip_version}` },
+            { key: 'first_seen', label: t('common_detail.first_seen'), render: (r) => formatDate(r.first_seen) },
+            { key: 'last_seen', label: t('common_detail.last_seen'), render: (r) => formatDate(r.last_seen) },
           ]}
           rows={history}
         />
       </section>
 
       <section className="card">
-        <h2>Hizmet Verdiği Domainler</h2>
+        <h2>{t('nameserver.served_domains')}</h2>
         <HistoryTable
-          emptyText="Henüz eşleşen domain bulunamadı."
+          emptyText={t('nameserver.no_domains')}
           columns={[
             {
               key: 'domain',
-              label: 'Domain',
+              label: t('ip.domain'),
               render: (r) => <Link to={`/domain/${r.domain}`}>{r.domain}</Link>,
             },
-            { key: 'first_seen', label: 'İlk Görülme', render: (r) => formatDate(r.first_seen) },
-            { key: 'last_seen', label: 'Son Görülme', render: (r) => formatDate(r.last_seen) },
+            { key: 'first_seen', label: t('common_detail.first_seen'), render: (r) => formatDate(r.first_seen) },
+            { key: 'last_seen', label: t('common_detail.last_seen'), render: (r) => formatDate(r.last_seen) },
           ]}
           rows={domains}
         />

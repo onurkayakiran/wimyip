@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { getDomain, getDomainHistory, refreshDomainDns } from '../api'
 import HistoryTable, { formatDate } from '../components/HistoryTable'
 import { ErrorBlock, Loading } from '../components/StatusBlock'
 
 export default function DomainDetail() {
+  const { t } = useTranslation()
   const { domain } = useParams()
 
   const [info, setInfo] = useState(null)
@@ -48,26 +50,26 @@ export default function DomainDetail() {
 
       <section className="card">
         <div className="card-header">
-          <h2>Genel Bilgi</h2>
+          <h2>{t('domain.general_info')}</h2>
           <button onClick={handleRefresh} disabled={refreshing}>
-            {refreshing ? 'Sorgulanıyor...' : 'DNS Şimdi Sorgula'}
+            {refreshing ? t('domain.querying') : t('domain.query_dns_now')}
           </button>
         </div>
         {info.notFound ? (
-          <p className="muted">Bu domain henüz arşivde keşfedilmedi; "DNS Şimdi Sorgula" ile ekleyebilirsiniz.</p>
+          <p className="muted">{t('domain.not_found_notice')}</p>
         ) : (
           <table>
             <tbody>
               <tr>
-                <th>Kaynaklar</th>
+                <th>{t('domain.sources')}</th>
                 <td>{(info.sources || []).join(', ') || '-'}</td>
               </tr>
               <tr>
-                <th>İlk Görülme</th>
+                <th>{t('common_detail.first_seen')}</th>
                 <td>{formatDate(info.first_seen)}</td>
               </tr>
               <tr>
-                <th>Son Görülme</th>
+                <th>{t('common_detail.last_seen')}</th>
                 <td>{formatDate(info.last_seen)}</td>
               </tr>
             </tbody>
@@ -76,70 +78,70 @@ export default function DomainDetail() {
       </section>
 
       <section className="card">
-        <h2>IP Geçmişi (A/AAAA)</h2>
+        <h2>{t('domain.ip_history')}</h2>
         <HistoryTable
-          emptyText="Henüz IP geçmişi toplanmadı."
+          emptyText={t('domain.no_ip_history')}
           columns={[
             {
               key: 'ip',
               label: 'IP',
               render: (r) => <Link to={`/ip/${r.ip}`}>{r.ip}</Link>,
             },
-            { key: 'ip_version', label: 'Versiyon', render: (r) => `IPv${r.ip_version}` },
-            { key: 'first_seen', label: 'İlk Görülme', render: (r) => formatDate(r.first_seen) },
-            { key: 'last_seen', label: 'Son Görülme', render: (r) => formatDate(r.last_seen) },
+            { key: 'ip_version', label: t('domain.version'), render: (r) => `IPv${r.ip_version}` },
+            { key: 'first_seen', label: t('common_detail.first_seen'), render: (r) => formatDate(r.first_seen) },
+            { key: 'last_seen', label: t('common_detail.last_seen'), render: (r) => formatDate(r.last_seen) },
           ]}
           rows={history?.ip_history}
         />
       </section>
 
       <section className="card">
-        <h2>Nameserver Geçmişi (NS)</h2>
+        <h2>{t('domain.ns_history')}</h2>
         <HistoryTable
-          emptyText="Henüz NS geçmişi toplanmadı."
+          emptyText={t('domain.no_ns_history')}
           columns={[
             {
               key: 'nameserver',
-              label: 'Nameserver',
+              label: t('ip.nameserver'),
               render: (r) => <Link to={`/nameserver/${r.nameserver}`}>{r.nameserver}</Link>,
             },
-            { key: 'first_seen', label: 'İlk Görülme', render: (r) => formatDate(r.first_seen) },
-            { key: 'last_seen', label: 'Son Görülme', render: (r) => formatDate(r.last_seen) },
+            { key: 'first_seen', label: t('common_detail.first_seen'), render: (r) => formatDate(r.first_seen) },
+            { key: 'last_seen', label: t('common_detail.last_seen'), render: (r) => formatDate(r.last_seen) },
           ]}
           rows={history?.ns_history}
         />
       </section>
 
       <section className="card">
-        <h2>MX Geçmişi</h2>
+        <h2>{t('domain.mx_history')}</h2>
         <HistoryTable
-          emptyText="Henüz MX geçmişi toplanmadı."
+          emptyText={t('domain.no_mx_history')}
           columns={[
-            { key: 'priority', label: 'Öncelik', render: (r) => r.priority },
-            { key: 'exchange', label: 'Sunucu', render: (r) => <span className="mono">{r.exchange}</span> },
-            { key: 'first_seen', label: 'İlk Görülme', render: (r) => formatDate(r.first_seen) },
-            { key: 'last_seen', label: 'Son Görülme', render: (r) => formatDate(r.last_seen) },
+            { key: 'priority', label: t('domain.priority'), render: (r) => r.priority },
+            { key: 'exchange', label: t('domain.server'), render: (r) => <span className="mono">{r.exchange}</span> },
+            { key: 'first_seen', label: t('common_detail.first_seen'), render: (r) => formatDate(r.first_seen) },
+            { key: 'last_seen', label: t('common_detail.last_seen'), render: (r) => formatDate(r.last_seen) },
           ]}
           rows={history?.mx_history}
         />
       </section>
 
       <section className="card">
-        <h2>TXT Geçmişi</h2>
+        <h2>{t('domain.txt_history')}</h2>
         <HistoryTable
-          emptyText="Henüz TXT geçmişi toplanmadı."
+          emptyText={t('domain.no_txt_history')}
           columns={[
             {
               key: 'value',
-              label: 'Değer',
+              label: t('domain.value'),
               render: (r) => (
                 <span className="mono" title={r.value}>
                   {r.value.length > 60 ? `${r.value.slice(0, 60)}…` : r.value}
                 </span>
               ),
             },
-            { key: 'first_seen', label: 'İlk Görülme', render: (r) => formatDate(r.first_seen) },
-            { key: 'last_seen', label: 'Son Görülme', render: (r) => formatDate(r.last_seen) },
+            { key: 'first_seen', label: t('common_detail.first_seen'), render: (r) => formatDate(r.first_seen) },
+            { key: 'last_seen', label: t('common_detail.last_seen'), render: (r) => formatDate(r.last_seen) },
           ]}
           rows={history?.txt_history}
         />
@@ -147,7 +149,7 @@ export default function DomainDetail() {
 
       {info.ptr_records?.length > 0 && (
         <section className="card">
-          <h2>Bu Hostname'e İşaret Eden PTR Kayıtları</h2>
+          <h2>{t('domain.ptr_pointing_title')}</h2>
           <HistoryTable
             columns={[
               {
@@ -155,7 +157,7 @@ export default function DomainDetail() {
                 label: 'IP',
                 render: (r) => <Link to={`/ip/${r.ip}`}>{r.ip}</Link>,
               },
-              { key: 'first_seen', label: 'İlk Görülme', render: (r) => formatDate(r.first_seen) },
+              { key: 'first_seen', label: t('common_detail.first_seen'), render: (r) => formatDate(r.first_seen) },
             ]}
             rows={info.ptr_records}
           />

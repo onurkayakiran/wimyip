@@ -1,10 +1,12 @@
+import i18n from './i18n'
+
 const API_BASE = '/api'
 
 async function request(path, options) {
   const res = await fetch(`${API_BASE}${path}`, options)
   if (!res.ok) {
     const body = await res.json().catch(() => ({}))
-    throw new Error(body.detail || `İstek başarısız: ${res.status}`)
+    throw new Error(body.detail || i18n.t('common.request_failed', { status: res.status }))
   }
   return res.json()
 }
@@ -69,27 +71,6 @@ export const revokeRemoteWorkerToken = (password, tokenId) =>
     headers: { 'X-Admin-Password': password },
   })
 
-export const createPortScanJob = (password, body) =>
-  request('/admin/port-scans', {
-    method: 'POST',
-    headers: { 'X-Admin-Password': password, 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-
-export const listPortScanJobs = (password, params = {}) =>
-  request(`/admin/port-scans?${new URLSearchParams(params).toString()}`, {
-    headers: { 'X-Admin-Password': password },
-  })
-
-export const getPortScanJob = (password, jobId) =>
-  request(`/admin/port-scans/${encodeURIComponent(jobId)}`, { headers: { 'X-Admin-Password': password } })
-
-export const resetPortScanJob = (password, jobId) =>
-  request(`/admin/port-scans/${encodeURIComponent(jobId)}/reset`, {
-    method: 'POST',
-    headers: { 'X-Admin-Password': password },
-  })
-
 export const registerUser = (username, email, password) =>
   request('/auth/register', {
     method: 'POST',
@@ -123,3 +104,38 @@ export const updateMonitor = (token, monitorId, body) =>
 
 export const deleteMonitor = (token, monitorId) =>
   request(`/monitors/${encodeURIComponent(monitorId)}`, { method: 'DELETE', headers: authHeaders(token) })
+
+export const getProfile = (token) => request('/auth/me', { headers: authHeaders(token) })
+
+export const updateProfile = (token, body) =>
+  request('/auth/me', { method: 'PATCH', headers: authHeaders(token), body: JSON.stringify(body) })
+
+export const changePassword = (token, currentPassword, newPassword) =>
+  request('/auth/change-password', {
+    method: 'POST',
+    headers: authHeaders(token),
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  })
+
+// IP Tarama - premium kullanicilara acik (bkz. backend/app/api/routes/scans.py)
+export const createScanJob = (token, body) =>
+  request('/scans', { method: 'POST', headers: authHeaders(token), body: JSON.stringify(body) })
+
+export const listScanJobs = (token, params = {}) =>
+  request(`/scans?${new URLSearchParams(params).toString()}`, { headers: authHeaders(token) })
+
+export const getScanJob = (token, jobId) =>
+  request(`/scans/${encodeURIComponent(jobId)}`, { headers: authHeaders(token) })
+
+export const resetScanJob = (token, jobId) =>
+  request(`/scans/${encodeURIComponent(jobId)}/reset`, { method: 'POST', headers: authHeaders(token) })
+
+export const getAdminUsers = (password) =>
+  request('/admin/users', { headers: { 'X-Admin-Password': password } })
+
+export const setUserPlan = (password, userId, plan) =>
+  request(`/admin/users/${encodeURIComponent(userId)}/plan`, {
+    method: 'POST',
+    headers: { 'X-Admin-Password': password, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ plan }),
+  })

@@ -7,6 +7,7 @@ from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, field_validator
 
 from app.core.config import settings
+from app.core.plans import get_user_plan, max_monitors_for_plan
 from app.core.security import get_current_user_id
 from app.core.serialization import clean_doc
 from app.db.mongo import get_db
@@ -62,12 +63,14 @@ class MonitorRequest(BaseModel):
 async def create_monitor(body: MonitorRequest, user_id: str = Depends(get_current_user_id)):
     db = get_db()
 
+    plan = await get_user_plan(user_id)
+    limit = max_monitors_for_plan(plan)
     existing_count = await db.monitors.count_documents({"user_id": ObjectId(user_id)})
-    if existing_count >= settings.max_monitors_per_user:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Kullanici basina en fazla {settings.max_monitors_per_user} monitor eklenebilir",
-        )
+    if existing_count >= limit:
+        detail = f"Kullanici basina en fazla {limit} monitor eklenebilir"
+        if plan != "premium":
+            detail += " (premium'a geçerek limiti artırabilirsiniz)"
+        raise HTTPException(status_code=400, detail=detail)
 
     try:
         await run_in_threadpool(resolve_public_ip, body.target)

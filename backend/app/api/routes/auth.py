@@ -2,11 +2,13 @@ import re
 import time
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, HTTPException, Request
+from bson import ObjectId
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, field_validator
 from pymongo.errors import DuplicateKeyError
 
-from app.core.security import create_access_token, hash_password, verify_password
+from app.core.security import create_access_token, get_current_user_id, hash_password, verify_password
+from app.core.serialization import clean_doc
 from app.db.mongo import get_db
 
 router = APIRouter()
@@ -35,6 +37,15 @@ def _check_rate_limit(ip: str) -> None:
     _attempts[ip] = recent
 
 
+def _validate_password_str(v: str) -> str:
+    if len(v) < 8:
+        raise ValueError("Parola en az 8 karakter olmali")
+    # bcrypt 72 BAYT'tan uzun parolalarda hata veriyor.
+    if len(v.encode("utf-8")) > 72:
+        raise ValueError("Parola en fazla 72 karakter olmali")
+    return v
+
+
 class RegisterRequest(BaseModel):
     username: str
     email: str
@@ -57,17 +68,42 @@ class RegisterRequest(BaseModel):
     @field_validator("password")
     @classmethod
     def _validate_password(cls, v: str) -> str:
-        if len(v) < 8:
-            raise ValueError("Parola en az 8 karakter olmali")
-        # bcrypt 72 BAYT'tan uzun parolalarda hata veriyor.
-        if len(v.encode("utf-8")) > 72:
-            raise ValueError("Parola en fazla 72 karakter olmali")
-        return v
+        return _validate_password_str(v)
 
 
 class LoginRequest(BaseModel):
     username: str
     password: str
+
+
+class UpdateProfileRequest(BaseModel):
+    email: str
+    first_name: str = ""
+    last_name: str = ""
+
+    @field_validator("email")
+    @classmethod
+    def _validate_email(cls, v: str) -> str:
+        if not _EMAIL_RE.match(v):
+            raise ValueError("Gecersiz e-posta adresi")
+        return v
+
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def _validate_new_password(cls, v: str) -> str:
+        return _validate_password_str(v)
+
+
+def _clean_user(doc: dict) -> dict:
+    # Sifre hash'i asla API yanitlarina sizmamali.
+    doc = dict(doc)
+    doc.pop("password_hash", None)
+    return clean_doc(doc)
 
 
 @router.post("/auth/register")
@@ -77,6 +113,12 @@ async def register(body: RegisterRequest, request: Request):
         "username": body.username,
         "email": body.email,
         "password_hash": hash_password(body.password),
+        "first_name": "",
+        "last_name": "",
+        # Herkes once free olarak kayit olur - premium'a gecis SADECE admin
+        # tarafindan yapilir (bkz. /admin/users/{id}/plan). Odeme entegrasyonu
+        # yok, bilerek - plan degisimi elle yonetiliyor.
+        "plan": "free",
         "created_at": datetime.now(timezone.utc),
     }
     try:
@@ -97,3 +139,35 @@ async def login(body: LoginRequest, request: Request):
 
     token = create_access_token(str(user["_id"]))
     return {"access_token": token, "token_type": "bearer"}
+
+
+@router.get("/auth/me")
+async def get_me(user_id: str = Depends(get_current_user_id)):
+    user = await get_db().users.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        raise HTTPException(status_code=404, detail="Kullanici bulunamadi")
+    return _clean_user(user)
+
+
+@router.patch("/auth/me")
+async def update_me(body: UpdateProfileRequest, user_id: str = Depends(get_current_user_id)):
+    oid = ObjectId(user_id)
+    try:
+        await get_db().users.update_one(
+            {"_id": oid},
+            {"$set": {"email": body.email, "first_name": body.first_name, "last_name": body.last_name}},
+        )
+    except DuplicateKeyError:
+        raise HTTPException(status_code=409, detail="Bu e-posta zaten kullaniliyor")
+    user = await get_db().users.find_one({"_id": oid})
+    return _clean_user(user)
+
+
+@router.post("/auth/change-password")
+async def change_password(body: ChangePasswordRequest, user_id: str = Depends(get_current_user_id)):
+    oid = ObjectId(user_id)
+    user = await get_db().users.find_one({"_id": oid})
+    if not user or not verify_password(body.current_password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Mevcut parola hatali")
+    await get_db().users.update_one({"_id": oid}, {"$set": {"password_hash": hash_password(body.new_password)}})
+    return {"ok": True}

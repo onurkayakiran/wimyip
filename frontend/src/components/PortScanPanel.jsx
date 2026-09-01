@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useRef, useState } from 'react'
-import { getPortScanJob, listPortScanJobs, listPrefixes, resetPortScanJob } from '../api'
+import { useTranslation } from 'react-i18next'
+import { getScanJob, listPrefixes, listScanJobs, resetScanJob } from '../api'
 import PortScanTriggerModal from './PortScanTriggerModal'
 import { ErrorBlock, Loading } from './StatusBlock'
 
@@ -8,15 +9,15 @@ const JOBS_LIMIT = 20
 const ACTIVE_REFRESH_MS = 4000
 const IDLE_REFRESH_MS = 20000
 
-const STATUS_LABELS = {
-  pending: 'Bekliyor',
-  claimed: 'Alındı',
-  running: 'Taranıyor',
-  completed: 'Tamamlandı',
-  failed: 'Başarısız',
-}
-
 function StatusBadge({ status }) {
+  const { t } = useTranslation()
+  const STATUS_LABELS = {
+    pending: t('scans.status_pending'),
+    claimed: t('scans.status_claimed'),
+    running: t('scans.status_running'),
+    completed: t('scans.status_completed'),
+    failed: t('scans.status_failed'),
+  }
   const ok = status === 'completed'
   const bad = status === 'failed'
   const cls = ok ? 'badge-ok' : bad ? 'badge-bad' : 'badge'
@@ -38,12 +39,13 @@ function ProgressBar({ scanned, total }) {
   )
 }
 
-function JobDetail({ password, jobId }) {
+function JobDetail({ token, jobId }) {
+  const { t } = useTranslation()
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
 
   function load() {
-    getPortScanJob(password, jobId)
+    getScanJob(token, jobId)
       .then((res) => {
         setData(res)
         setError(null)
@@ -69,16 +71,16 @@ function JobDetail({ password, jobId }) {
       <table>
         <thead>
           <tr>
-            <th>IP</th>
-            <th>Açık Portlar</th>
-            <th>Servisler</th>
+            <th>{t('scans.detail_ip')}</th>
+            <th>{t('scans.detail_open_ports')}</th>
+            <th>{t('scans.detail_services')}</th>
           </tr>
         </thead>
         <tbody>
           {withPorts.length === 0 && (
             <tr>
               <td colSpan={3} className="muted">
-                {results.length === 0 ? 'Henüz sonuç yok.' : 'Açık port bulunan host yok (şimdiye kadar).'}
+                {results.length === 0 ? t('scans.no_detail_results_yet') : t('scans.no_open_ports_yet')}
               </td>
             </tr>
           )}
@@ -99,7 +101,8 @@ function JobDetail({ password, jobId }) {
   )
 }
 
-function JobsTable({ password }) {
+function JobsTable({ token }) {
+  const { t } = useTranslation()
   const [offset, setOffset] = useState(0)
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
@@ -108,7 +111,7 @@ function JobsTable({ password }) {
   const timerRef = useRef(null)
 
   function load() {
-    listPortScanJobs(password, { limit: JOBS_LIMIT, offset })
+    listScanJobs(token, { limit: JOBS_LIMIT, offset })
       .then((res) => {
         setData(res)
         setError(null)
@@ -132,9 +135,9 @@ function JobsTable({ password }) {
   }, [data])
 
   function handleReset(job) {
-    if (!window.confirm(`"${job.target}" taraması sıfırlanıp tekrar sıraya alınsın mı?`)) return
+    if (!window.confirm(t('scans.confirm_reset', { target: job.target }))) return
     setResetting(job.id)
-    resetPortScanJob(password, job.id)
+    resetScanJob(token, job.id)
       .then(load)
       .catch((e) => setError(e.message))
       .finally(() => setResetting(null))
@@ -157,11 +160,11 @@ function JobsTable({ password }) {
               <thead>
                 <tr>
                   <th></th>
-                  <th>Hedef</th>
-                  <th>Durum</th>
-                  <th>İlerleme</th>
-                  <th>Şu an</th>
-                  <th>Sonuç</th>
+                  <th>{t('scans.target')}</th>
+                  <th>{t('scans.status')}</th>
+                  <th>{t('scans.progress')}</th>
+                  <th>{t('scans.current')}</th>
+                  <th>{t('scans.result')}</th>
                   <th></th>
                 </tr>
               </thead>
@@ -169,7 +172,7 @@ function JobsTable({ password }) {
                 {items.length === 0 && (
                   <tr>
                     <td colSpan={7} className="muted">
-                      Henüz tarama başlatılmadı.
+                      {t('scans.no_scans_yet')}
                     </td>
                   </tr>
                 )}
@@ -191,13 +194,13 @@ function JobsTable({ password }) {
                       <td className="mono muted">{job.current_ip || '-'}</td>
                       <td className="muted">
                         {job.result_summary
-                          ? `${job.result_summary.hosts_with_open_ports ?? 0} açık portlu host`
+                          ? t('scans.result_open_ports', { count: job.result_summary.hosts_with_open_ports ?? 0 })
                           : '-'}
                       </td>
                       <td>
                         {(job.status === 'claimed' || job.status === 'running') && (
                           <button onClick={() => handleReset(job)} disabled={resetting === job.id}>
-                            {resetting === job.id ? 'Sıfırlanıyor...' : 'Sıfırla'}
+                            {resetting === job.id ? t('scans.resetting') : t('scans.reset')}
                           </button>
                         )}
                       </td>
@@ -205,7 +208,7 @@ function JobsTable({ password }) {
                     {openJobId === job.id && (
                       <tr>
                         <td colSpan={7}>
-                          <JobDetail password={password} jobId={job.id} />
+                          <JobDetail token={token} jobId={job.id} />
                         </td>
                       </tr>
                     )}
@@ -217,14 +220,14 @@ function JobsTable({ password }) {
 
           <div className="card-header">
             <span className="muted">
-              {total > 0 ? `${offset + 1}-${Math.min(offset + JOBS_LIMIT, total)} / ${total}` : '0 tarama'}
+              {total > 0 ? t('common.results_range', { from: offset + 1, to: Math.min(offset + JOBS_LIMIT, total), total }) : t('common.results_count', { count: 0 })}
             </span>
             <span>
               <button onClick={() => setOffset(offset - JOBS_LIMIT)} disabled={!hasPrev}>
-                Önceki
+                {t('common.previous')}
               </button>{' '}
               <button onClick={() => setOffset(offset + JOBS_LIMIT)} disabled={!hasNext}>
-                Sonraki
+                {t('common.next')}
               </button>
             </span>
           </div>
@@ -234,7 +237,8 @@ function JobsTable({ password }) {
   )
 }
 
-export default function PortScanPanel({ password }) {
+export default function PortScanPanel({ token }) {
+  const { t } = useTranslation()
   const [inputValue, setInputValue] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState('')
   const [offset, setOffset] = useState(0)
@@ -291,30 +295,30 @@ export default function PortScanPanel({ password }) {
     <>
       <section className="card">
         <div className="card-header">
-          <h2>Yeni Tarama</h2>
+          <h2>{t('scans.new_scan')}</h2>
         </div>
 
         <form onSubmit={handleQuickScan} className="search">
           <input
             type="text"
-            placeholder="Hızlı Tara: bir IP veya CIDR yazın (örn. 8.8.8.8)"
+            placeholder={t('scans.quick_scan_placeholder')}
             value={quickTarget}
             onChange={(e) => setQuickTarget(e.target.value)}
           />
           <button type="submit" disabled={!quickTarget.trim()}>
-            Tara
+            {t('scans.scan')}
           </button>
         </form>
 
         <form onSubmit={handleSubmit} className="search" style={{ marginTop: '0.5rem' }}>
           <input
             type="text"
-            placeholder="Subnet ara (CIDR alt-dizesi veya tam IP)..."
+            placeholder={t('scans.subnet_search_placeholder')}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
           />
           <button type="submit" disabled={searching}>
-            {searching ? 'Aranıyor...' : 'Ara'}
+            {searching ? t('scans.searching') : t('scans.search')}
           </button>
         </form>
 
@@ -328,9 +332,9 @@ export default function PortScanPanel({ password }) {
               <table>
                 <thead>
                   <tr>
-                    <th>CIDR</th>
-                    <th>RIR</th>
-                    <th>Ülke</th>
+                    <th>{t('common_detail.cidr')}</th>
+                    <th>{t('common_detail.rir')}</th>
+                    <th>{t('common_detail.country')}</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -338,7 +342,7 @@ export default function PortScanPanel({ password }) {
                   {items.length === 0 && (
                     <tr>
                       <td colSpan={4} className="muted">
-                        Sonuç bulunamadı.
+                        {t('scans.no_results')}
                       </td>
                     </tr>
                   )}
@@ -348,7 +352,7 @@ export default function PortScanPanel({ password }) {
                       <td className="muted">{p.rir}</td>
                       <td className="muted">{p.country || '-'}</td>
                       <td>
-                        <button onClick={() => setScanTarget(p.cidr)}>Tara</button>
+                        <button onClick={() => setScanTarget(p.cidr)}>{t('scans.scan')}</button>
                       </td>
                     </tr>
                   ))}
@@ -358,14 +362,14 @@ export default function PortScanPanel({ password }) {
 
             <div className="card-header">
               <span className="muted">
-                {total > 0 ? `${offset + 1}-${Math.min(offset + PREFIX_LIMIT, total)} / ${total}` : '0 sonuç'}
+                {total > 0 ? t('common.results_range', { from: offset + 1, to: Math.min(offset + PREFIX_LIMIT, total), total }) : t('common.results_count', { count: 0 })}
               </span>
               <span>
                 <button onClick={() => setOffset(offset - PREFIX_LIMIT)} disabled={!hasPrev}>
-                  Önceki
+                  {t('common.previous')}
                 </button>{' '}
                 <button onClick={() => setOffset(offset + PREFIX_LIMIT)} disabled={!hasNext}>
-                  Sonraki
+                  {t('common.next')}
                 </button>
               </span>
             </div>
@@ -375,14 +379,14 @@ export default function PortScanPanel({ password }) {
 
       <section className="card">
         <div className="card-header">
-          <h2>Taramalar</h2>
+          <h2>{t('scans.scans_list')}</h2>
         </div>
-        <JobsTable key={jobsVersion} password={password} />
+        <JobsTable key={jobsVersion} token={token} />
       </section>
 
       {scanTarget && (
         <PortScanTriggerModal
-          password={password}
+          token={token}
           initialTarget={scanTarget}
           onClose={() => setScanTarget(null)}
           onCreated={() => setJobsVersion((v) => v + 1)}

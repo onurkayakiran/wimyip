@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { createPortScanJob } from '../api'
+import { useTranslation } from 'react-i18next'
+import { createScanJob } from '../api'
 import { ErrorBlock } from './StatusBlock'
 
-export default function PortScanTriggerModal({ password, initialTarget, onClose, onCreated }) {
+export default function PortScanTriggerModal({ token, initialTarget, onClose, onCreated }) {
+  const { t } = useTranslation()
   const [target, setTarget] = useState(initialTarget || '')
   const [portMode, setPortMode] = useState('custom')
   const [customPorts, setCustomPorts] = useState('')
@@ -19,12 +21,12 @@ export default function PortScanTriggerModal({ password, initialTarget, onClose,
       .filter((p) => Number.isInteger(p) && p > 0 && p <= 65535)
 
     if (portMode === 'custom' && ports.length === 0) {
-      setError('En az bir port girin (virgülle ayırarak).')
+      setError(t('scans.ports_required'))
       return
     }
 
     setSubmitting(true)
-    createPortScanJob(password, {
+    createScanJob(token, {
       target,
       port_mode: portMode,
       custom_ports: ports,
@@ -42,16 +44,16 @@ export default function PortScanTriggerModal({ password, initialTarget, onClose,
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="card-header">
-          <h2>Port Taraması Başlat</h2>
-          <button onClick={onClose}>Kapat</button>
+          <h2>{t('scans.trigger_title')}</h2>
+          <button onClick={onClose}>{t('common.close')}</button>
         </div>
 
         <form onSubmit={handleSubmit} className="search" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.75rem' }}>
           <label>
-            Hedef (IP veya CIDR)
+            {t('scans.target_label')}
             <input
               type="text"
-              placeholder="örn. 8.8.8.8 veya 203.0.113.0/24"
+              placeholder={t('scans.target_hint')}
               value={target}
               onChange={(e) => setTarget(e.target.value)}
               autoFocus
@@ -59,20 +61,20 @@ export default function PortScanTriggerModal({ password, initialTarget, onClose,
           </label>
 
           <label>
-            Port modu
+            {t('scans.port_mode')}
             <select value={portMode} onChange={(e) => setPortMode(e.target.value)}>
-              <option value="custom">Özel port listesi</option>
-              <option value="popular">Popüler portlar</option>
-              <option value="all">Tüm portlar (1-65535, yavaş)</option>
+              <option value="custom">{t('scans.port_mode_custom')}</option>
+              <option value="popular">{t('scans.port_mode_popular')}</option>
+              <option value="all">{t('scans.port_mode_all')}</option>
             </select>
           </label>
 
           {portMode === 'custom' && (
             <label>
-              Portlar (virgülle ayırın)
+              {t('scans.ports_label')}
               <input
                 type="text"
-                placeholder="örn. 22,80,443,3306"
+                placeholder={t('scans.ports_hint')}
                 value={customPorts}
                 onChange={(e) => setCustomPorts(e.target.value)}
               />
@@ -80,7 +82,7 @@ export default function PortScanTriggerModal({ password, initialTarget, onClose,
           )}
 
           <label>
-            IP'ler arası gecikme (saniye)
+            {t('scans.delay_label')}
             <input
               type="number"
               min="0"
@@ -93,7 +95,7 @@ export default function PortScanTriggerModal({ password, initialTarget, onClose,
           <ErrorBlock message={error} />
 
           <button type="submit" disabled={submitting || !target}>
-            {submitting ? 'Başlatılıyor...' : 'Taramayı Başlat'}
+            {submitting ? t('scans.starting') : t('scans.start')}
           </button>
         </form>
       </div>

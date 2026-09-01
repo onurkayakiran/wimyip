@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { listDomains } from '../api'
 import { formatDate } from './HistoryTable'
@@ -7,6 +8,7 @@ import { ErrorBlock, Loading } from './StatusBlock'
 const LIMIT = 50
 
 export default function TrDomainsModal({ onClose }) {
+  const { t } = useTranslation()
   const [inputValue, setInputValue] = useState('')
   const [submittedQuery, setSubmittedQuery] = useState('')
   const [offset, setOffset] = useState(0)
@@ -53,20 +55,20 @@ export default function TrDomainsModal({ onClose }) {
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-box" onClick={(e) => e.stopPropagation()}>
         <div className="card-header">
-          <h2>Türkiye Apex Domain Taraması</h2>
-          <button onClick={onClose}>Kapat</button>
+          <h2>{t('admin.tr_domain_modal_title')}</h2>
+          <button onClick={onClose}>{t('common.close')}</button>
         </div>
 
         <form onSubmit={handleSubmit} className="search">
           <input
             type="text"
-            placeholder="Domain ara..."
+            placeholder={t('admin.search_domain_placeholder')}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             autoFocus
           />
           <button type="submit" disabled={searching}>
-            {searching ? 'Aranıyor...' : 'Ara'}
+            {searching ? t('admin.searching') : t('admin.search')}
           </button>
         </form>
 
@@ -80,9 +82,9 @@ export default function TrDomainsModal({ onClose }) {
               <table>
                 <thead>
                   <tr>
-                    <th>Domain</th>
-                    <th>İlk Görülme</th>
-                    <th>Son Görülme</th>
+                    <th>{t('admin.domain')}</th>
+                    <th>{t('admin.first_seen')}</th>
+                    <th>{t('admin.last_seen')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -98,7 +100,7 @@ export default function TrDomainsModal({ onClose }) {
                   {items.length === 0 && (
                     <tr>
                       <td colSpan={3} className="muted">
-                        Sonuç bulunamadı.
+                        {t('admin.no_results')}
                       </td>
                     </tr>
                   )}
@@ -108,14 +110,14 @@ export default function TrDomainsModal({ onClose }) {
 
             <div className="card-header">
               <span className="muted">
-                {total > 0 ? `${offset + 1}-${Math.min(offset + LIMIT, total)} / ${total}` : '0 sonuç'}
+                {total > 0 ? t('common.results_range', { from: offset + 1, to: Math.min(offset + LIMIT, total), total }) : t('common.results_count', { count: 0 })}
               </span>
               <span>
                 <button onClick={() => setOffset(offset - LIMIT)} disabled={!hasPrev}>
-                  Önceki
+                  {t('common.previous')}
                 </button>{' '}
                 <button onClick={() => setOffset(offset + LIMIT)} disabled={!hasNext}>
-                  Sonraki
+                  {t('common.next')}
                 </button>
               </span>
             </div>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 
 function detectDestination(raw) {
@@ -22,6 +23,7 @@ function detectDestination(raw) {
 export default function SearchBar({ autoFocus = false }) {
   const [value, setValue] = useState('')
   const navigate = useNavigate()
+  const { t } = useTranslation()
 
   function handleSubmit(e) {
     e.preventDefault()
@@ -34,11 +36,11 @@ export default function SearchBar({ autoFocus = false }) {
       <input
         type="text"
         autoFocus={autoFocus}
-        placeholder="IP, CIDR (1.2.3.0/24), ASN (AS15169), domain veya org adı ara..."
+        placeholder={t('common.search_placeholder')}
         value={value}
         onChange={(e) => setValue(e.target.value)}
       />
-      <button type="submit">Ara</button>
+      <button type="submit">{t('common.search')}</button>
     </form>
   )
 }

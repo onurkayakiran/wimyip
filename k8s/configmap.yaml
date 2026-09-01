@@ -54,15 +54,19 @@ data:
   # Anasayfa istatistik onbellegi
   STATS_REFRESH_INTERVAL_SECONDS: "300.0"
 
-  # Admin panelinden tetiklenen SYN port taramasi varsayilanlari
+  # IP Tarama (SYN port scan) - artik sadece premium plandaki kullanicilara
+  # acik (bkz. backend/app/api/routes/scans.py).
   PORTSCAN_DEFAULT_DELAY_SECONDS: "5.0"
   PORTSCAN_MAX_HOSTS: "256"
+  MAX_ACTIVE_SCANS_PER_USER: "3"
 
   # Kullanici paneli - JWT suresi (dakika)
   JWT_EXPIRE_MINUTES: "10080"
 
-  # Domain monitoring (HTTP/HTTPS/Ping)
-  MAX_MONITORS_PER_USER: "20"
+  # Domain monitoring (HTTP/HTTPS/Ping) - plan bazli limitler. free->premium
+  # gecisi /admin panelindeki Kullanicilar bolumunden yapilir.
+  FREE_MAX_MONITORS: "5"
+  PREMIUM_MAX_MONITORS: "100"
   MIN_MONITOR_INTERVAL_SECONDS: "60"
   DEFAULT_MONITOR_INTERVAL_SECONDS: "300"
   MONITOR_CHECK_BATCH_SIZE: "50"
