@@ -4,7 +4,7 @@ import { getScanJob, listPrefixes, listScanJobs, resetScanJob } from '../api'
 import PortScanTriggerModal from './PortScanTriggerModal'
 import { ErrorBlock, Loading } from './StatusBlock'
 
-const PREFIX_LIMIT = 50
+const PREFIX_LIMIT = 10
 const JOBS_LIMIT = 20
 const ACTIVE_REFRESH_MS = 4000
 const IDLE_REFRESH_MS = 20000
@@ -293,89 +293,97 @@ export default function PortScanPanel({ token }) {
 
   return (
     <>
-      <section className="card">
-        <div className="card-header">
-          <h2>{t('scans.new_scan')}</h2>
-        </div>
+      <div className="scans-columns">
+        <section className="card scans-column-new">
+          <div className="card-header">
+            <h2>{t('scans.new_scan')}</h2>
+          </div>
 
-        <form onSubmit={handleQuickScan} className="search">
-          <input
-            type="text"
-            placeholder={t('scans.quick_scan_placeholder')}
-            value={quickTarget}
-            onChange={(e) => setQuickTarget(e.target.value)}
-          />
-          <button type="submit" disabled={!quickTarget.trim()}>
-            {t('scans.scan')}
-          </button>
-        </form>
+          <form onSubmit={handleQuickScan} className="search">
+            <input
+              type="text"
+              placeholder={t('scans.quick_scan_placeholder')}
+              value={quickTarget}
+              onChange={(e) => setQuickTarget(e.target.value)}
+            />
+            <button type="submit" disabled={!quickTarget.trim()}>
+              {t('scans.scan')}
+            </button>
+          </form>
+        </section>
 
-        <form onSubmit={handleSubmit} className="search" style={{ marginTop: '0.5rem' }}>
-          <input
-            type="text"
-            placeholder={t('scans.subnet_search_placeholder')}
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-          />
-          <button type="submit" disabled={searching}>
-            {searching ? t('scans.searching') : t('scans.search')}
-          </button>
-        </form>
+        <section className="card scans-column-cidrs">
+          <div className="card-header">
+            <h2>{t('scans.cidr_list_title')}</h2>
+          </div>
 
-        <ErrorBlock message={error} />
+          <form onSubmit={handleSubmit} className="search">
+            <input
+              type="text"
+              placeholder={t('scans.subnet_search_placeholder')}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+            />
+            <button type="submit" disabled={searching}>
+              {searching ? t('scans.searching') : t('scans.search')}
+            </button>
+          </form>
 
-        {!data ? (
-          <Loading />
-        ) : (
-          <>
-            <div className="table-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>{t('common_detail.cidr')}</th>
-                    <th>{t('common_detail.rir')}</th>
-                    <th>{t('common_detail.country')}</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.length === 0 && (
+          <ErrorBlock message={error} />
+
+          {!data ? (
+            <Loading />
+          ) : (
+            <>
+              <div className="table-scroll">
+                <table>
+                  <thead>
                     <tr>
-                      <td colSpan={4} className="muted">
-                        {t('scans.no_results')}
-                      </td>
+                      <th>{t('common_detail.cidr')}</th>
+                      <th>{t('common_detail.rir')}</th>
+                      <th>{t('common_detail.country')}</th>
+                      <th></th>
                     </tr>
-                  )}
-                  {items.map((p) => (
-                    <tr key={p.cidr}>
-                      <td className="mono">{p.cidr}</td>
-                      <td className="muted">{p.rir}</td>
-                      <td className="muted">{p.country || '-'}</td>
-                      <td>
-                        <button onClick={() => setScanTarget(p.cidr)}>{t('scans.scan')}</button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {items.length === 0 && (
+                      <tr>
+                        <td colSpan={4} className="muted">
+                          {t('scans.no_results')}
+                        </td>
+                      </tr>
+                    )}
+                    {items.map((p) => (
+                      <tr key={p.cidr}>
+                        <td className="mono">{p.cidr}</td>
+                        <td className="muted">{p.rir}</td>
+                        <td className="muted">{p.country || '-'}</td>
+                        <td>
+                          <button onClick={() => setScanTarget(p.cidr)}>{t('scans.scan')}</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-            <div className="card-header">
-              <span className="muted">
-                {total > 0 ? t('common.results_range', { from: offset + 1, to: Math.min(offset + PREFIX_LIMIT, total), total }) : t('common.results_count', { count: 0 })}
-              </span>
-              <span>
-                <button onClick={() => setOffset(offset - PREFIX_LIMIT)} disabled={!hasPrev}>
-                  {t('common.previous')}
-                </button>{' '}
-                <button onClick={() => setOffset(offset + PREFIX_LIMIT)} disabled={!hasNext}>
-                  {t('common.next')}
-                </button>
-              </span>
-            </div>
-          </>
-        )}
-      </section>
+              <div className="card-header">
+                <span className="muted">
+                  {total > 0 ? t('common.results_range', { from: offset + 1, to: Math.min(offset + PREFIX_LIMIT, total), total }) : t('common.results_count', { count: 0 })}
+                </span>
+                <span>
+                  <button onClick={() => setOffset(offset - PREFIX_LIMIT)} disabled={!hasPrev}>
+                    {t('common.previous')}
+                  </button>{' '}
+                  <button onClick={() => setOffset(offset + PREFIX_LIMIT)} disabled={!hasNext}>
+                    {t('common.next')}
+                  </button>
+                </span>
+              </div>
+            </>
+          )}
+        </section>
+      </div>
 
       <section className="card">
         <div className="card-header">

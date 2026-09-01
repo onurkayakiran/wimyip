@@ -210,6 +210,7 @@
     "title": "IP-Scan",
     "premium_required": "Diese Funktion erfordert eine <bold>Premium</bold>-Mitgliedschaft. Bitte kontaktieren Sie uns, um auf Premium zu wechseln.",
     "new_scan": "Neuer Scan",
+    "cidr_list_title": "CIDR-Liste",
     "quick_scan_placeholder": "Schnellscan: IP oder CIDR eingeben (z. B. 8.8.8.8)",
     "scan": "Scannen",
     "subnet_search_placeholder": "Subnetz suchen (CIDR-Teilzeichenfolge oder vollständige IP)...",

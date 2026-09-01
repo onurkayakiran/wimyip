@@ -210,6 +210,7 @@
     "title": "IP Tarama",
     "premium_required": "Bu özellik <bold>premium</bold> üyelik gerektiriyor. Premium'a geçmek için lütfen bizimle iletişime geçin.",
     "new_scan": "Yeni Tarama",
+    "cidr_list_title": "CIDR Listesi",
     "quick_scan_placeholder": "Hızlı Tara: bir IP veya CIDR yazın (örn. 8.8.8.8)",
     "scan": "Tara",
     "subnet_search_placeholder": "Subnet ara (CIDR alt-dizesi veya tam IP)...",
