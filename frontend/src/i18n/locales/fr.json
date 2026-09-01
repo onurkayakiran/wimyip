@@ -141,6 +141,7 @@
     "login_title": "Connexion",
     "register_title": "Inscription",
     "username": "Nom d'utilisateur",
+    "username_or_email": "Nom d'utilisateur ou e-mail",
     "username_hint": "Nom d'utilisateur (3-32 caractères)",
     "email": "E-mail",
     "password": "Mot de passe",

@@ -141,6 +141,7 @@
     "login_title": "Log In",
     "register_title": "Sign Up",
     "username": "Username",
+    "username_or_email": "Username or email",
     "username_hint": "Username (3-32 characters)",
     "email": "Email",
     "password": "Password",

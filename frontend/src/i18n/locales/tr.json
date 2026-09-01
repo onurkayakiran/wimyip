@@ -141,6 +141,7 @@
     "login_title": "Giriş Yap",
     "register_title": "Kayıt Ol",
     "username": "Kullanıcı adı",
+    "username_or_email": "Kullanıcı adı veya e-posta",
     "username_hint": "Kullanıcı adı (3-32 karakter)",
     "email": "E-posta",
     "password": "Parola",

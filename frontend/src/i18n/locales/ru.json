@@ -141,6 +141,7 @@
     "login_title": "Вход",
     "register_title": "Регистрация",
     "username": "Имя пользователя",
+    "username_or_email": "Имя пользователя или email",
     "username_hint": "Имя пользователя (3-32 символа)",
     "email": "Email",
     "password": "Пароль",

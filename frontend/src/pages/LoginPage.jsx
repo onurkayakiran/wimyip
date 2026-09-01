@@ -29,7 +29,7 @@ export default function LoginPage() {
       <form className="search" onSubmit={handleSubmit} style={{ flexDirection: 'column', alignItems: 'stretch' }}>
         <input
           type="text"
-          placeholder={t('auth.username')}
+          placeholder={t('auth.username_or_email')}
           value={username}
           onChange={(e) => setUsername(e.target.value)}
           autoFocus

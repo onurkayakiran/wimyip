@@ -133,7 +133,9 @@ async def register(body: RegisterRequest, request: Request):
 @router.post("/auth/login")
 async def login(body: LoginRequest, request: Request):
     _check_rate_limit(request.client.host if request.client else "unknown")
-    user = await get_db().users.find_one({"username": body.username})
+    user = await get_db().users.find_one(
+        {"$or": [{"username": body.username}, {"email": body.username}]}
+    )
     if not user or not verify_password(body.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Kullanici adi veya parola hatali")
 

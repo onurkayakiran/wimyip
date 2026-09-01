@@ -141,6 +141,7 @@
     "login_title": "Anmelden",
     "register_title": "Registrieren",
     "username": "Benutzername",
+    "username_or_email": "Benutzername oder E-Mail",
     "username_hint": "Benutzername (3-32 Zeichen)",
     "email": "E-Mail",
     "password": "Passwort",
