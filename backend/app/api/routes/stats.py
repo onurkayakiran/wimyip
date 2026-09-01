@@ -10,10 +10,13 @@ router = APIRouter()
 @router.get("/stats")
 async def stats():
     db = get_db()
+    cached = await db.stats_cache.find_one({"_id": "counts"})
+    if not cached:
+        return {"prefixes": 0, "asns": 0, "domains": 0}
     return {
-        "prefixes": await db.prefixes.count_documents({}),
-        "asns": await db.asns.count_documents({}),
-        "domains": await db.domains.count_documents({}),
+        "prefixes": cached.get("prefixes", 0),
+        "asns": cached.get("asns", 0),
+        "domains": cached.get("domains", 0),
     }
 
 

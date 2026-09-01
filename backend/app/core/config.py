@@ -66,6 +66,18 @@ class Settings(BaseSettings):
     control_service_url: str = "http://control:8080"
     control_service_token: str = ""
 
+    # Anasayfa istatistik sayaclarini (prefixes/asns/domains) periyodik
+    # olarak onbellege alan gorev - domains 16M+ oldugu icin canli
+    # count_documents({}) her istekte tam tarama yapip 504'e yol aciyordu.
+    stats_refresh_interval_seconds: float = 300.0
+
+    # Admin panelinden tetiklenen SYN port taramasi (worker-portscan
+    # container'i uzerinden, bkz. remote-api/app/queues/port_scan.py).
+    # portscan_max_hosts: yanlislikla cok genis bir blok (orn. /16) taratilmasini
+    # onleyen guvenlik siniri - is olusturma bu deger asilirsa reddedilir.
+    portscan_default_delay_seconds: float = 5.0
+    portscan_max_hosts: int = 256
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

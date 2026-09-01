@@ -1,0 +1,104 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - 'k8s/**'
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      remote_api: ${{ steps.filter.outputs.remote_api }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+            frontend:
+              - 'frontend/**'
+            remote_api:
+              - 'remote-api/**'
+
+  build:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.remote_api == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push backend image
+        if: needs.changes.outputs.backend == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/wimyip-backend:${{ github.sha }}
+
+      - name: Build and push frontend image
+        if: needs.changes.outputs.frontend == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/wimyip-frontend:${{ github.sha }}
+
+      - name: Build and push remote-api image
+        if: needs.changes.outputs.remote_api == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./remote-api
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/wimyip-remote-api:${{ github.sha }}
+
+      - name: Update manifests
+        run: |
+          set -e
+          CHANGED=""
+
+          if [ "${{ needs.changes.outputs.backend }}" = "true" ]; then
+            CHANGED="$CHANGED backend"
+            for f in k8s/backend.yaml k8s/worker.yaml k8s/beat.yaml k8s/ptr-worker.yaml k8s/ptr-worker-country.yaml k8s/apex-worker-country.yaml; do
+              sed -i "s|image: ghcr.io/${{ github.repository_owner }}/wimyip-backend:.*|image: ghcr.io/${{ github.repository_owner }}/wimyip-backend:${{ github.sha }}|" "$f"
+            done
+          fi
+
+          if [ "${{ needs.changes.outputs.frontend }}" = "true" ]; then
+            CHANGED="$CHANGED frontend"
+            sed -i "s|image: ghcr.io/${{ github.repository_owner }}/wimyip-frontend:.*|image: ghcr.io/${{ github.repository_owner }}/wimyip-frontend:${{ github.sha }}|" k8s/frontend.yaml
+          fi
+
+          if [ "${{ needs.changes.outputs.remote_api }}" = "true" ]; then
+            CHANGED="$CHANGED remote-api"
+            sed -i "s|image: ghcr.io/${{ github.repository_owner }}/wimyip-remote-api:.*|image: ghcr.io/${{ github.repository_owner }}/wimyip-remote-api:${{ github.sha }}|" k8s/remote-api.yaml
+          fi
+
+          echo "changed_components=$CHANGED" >> "$GITHUB_ENV"
+
+      - name: Commit and push manifest changes
+        run: |
+          if git diff --quiet; then
+            echo "No manifest changes to commit"
+            exit 0
+          fi
+          git config user.name "ci-bot"
+          git config user.email "ci@users.noreply.github.com"
+          git commit -am "deploy: ${{ github.sha }} (${{ env.changed_components }})"
+          git push

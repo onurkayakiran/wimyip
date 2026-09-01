@@ -130,6 +130,31 @@ services:
       redis:
         condition: service_started
 
+  remote-api:
+    build: ./remote-api
+    restart: unless-stopped
+    # control servisiyle ayni felsefe (izole servis, sadece ihtiyaci olan
+    # sirri alir) ama tersine cevrilmis: bu servis BILHASSA internete acik
+    # olacak sekilde sertlestirilmis (token bazli auth, rate limit, katı
+    # input dogrulama - bkz. remote-api/app). env_file KULLANMIYORUZ, sadece
+    # asagidaki degiskenler aciqca veriliyor - boylece bu container'in
+    # ortaminda ADMIN_PASSWORD/CONTROL_SERVICE_TOKEN/CELERY_BROKER_URL gibi
+    # sirlar hic bulunmuyor. redis/control'e de kasitli olarak depends_on
+    # YOK - bu servis onlara hic erisemiyor, disariya sadece (harici) Mongo'ya
+    # baglaniyor.
+    environment:
+      MONGO_URI: ${MONGO_URI}
+      MONGO_DB: ${MONGO_DB}
+      MAX_BATCH_SIZE: ${REMOTE_API_MAX_BATCH_SIZE:-1000}
+      CLAIM_LEASE_SECONDS: ${REMOTE_API_CLAIM_LEASE_SECONDS:-300}
+      RATE_LIMIT_CLAIM_PER_MINUTE: ${REMOTE_API_RATE_LIMIT_CLAIM_PER_MINUTE:-20}
+      RATE_LIMIT_SUBMIT_PER_MINUTE: ${REMOTE_API_RATE_LIMIT_SUBMIT_PER_MINUTE:-20}
+      PORT_SCAN_LEASE_SECONDS: ${PORT_SCAN_LEASE_SECONDS:-21600}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${REMOTE_API_PORT:-8002}:8000"
+
   frontend:
     build: ./frontend
     restart: unless-stopped

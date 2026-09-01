@@ -1,0 +1,46 @@
+services:
+  # Ucu de ayni imaji (ayni Dockerfile) paylasir, sadece QUEUE farkli - .env'deki
+  # tek REMOTE_API_TOKEN'in tum kuyruklara izinli olmasi yeterli (token
+  # olustururken /admin panelinde birden fazla kuyruk secilebiliyor).
+  # Kasitli: hicbirinde ports YOK - bu container'lar hicbir inbound baglanti
+  # kabul etmiyor, sadece CENTRAL_API_URL'e outbound HTTPS istegi atiyor. Ele
+  # gecirilseler bile bu sunucuda ek bir saldiri yuzeyi acmiyorlar.
+  worker-ptr:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      QUEUE: ptr_sweep
+
+  worker-dns:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      QUEUE: dns_history
+
+  worker-dns-apex:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      QUEUE: dns_history_apex
+
+  # SYN port taramasi (scapy) icin izole, AYRI bir image (Dockerfile.portscan)
+  # kullanir - paylasilan Dockerfile'a hic dokunulmadi, boylece yukaridaki 3
+  # worker hala tamamen ayricaliksiz kaliyor. Bu container'in tek ozel yetkisi
+  # NET_RAW (ham soket) - once TUM yetkiler dusuruluyor (cap_drop: ALL),
+  # sonra SADECE bu biri geri ekleniyor. NET_ADMIN GEREKMIYOR: scapy'nin
+  # sr1() ile SYN gonderip yanit dinlemesi arayuz/promiscuous-mode degistirme
+  # gerektirmiyor. `security_opt: no-new-privileges` KESINLIKLE eklenmemeli -
+  # Dockerfile.portscan'daki setcap dosya-yetkisi mekanizmasini bozar.
+  worker-portscan:
+    build:
+      context: .
+      dockerfile: Dockerfile.portscan
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      QUEUE: port_scan
+    cap_drop: [ALL]
+    cap_add: [NET_RAW]

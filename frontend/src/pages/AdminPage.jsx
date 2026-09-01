@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { adminLogin, getAdminServiceLogs, getAdminServices, restartAdminService } from '../api'
 import { formatDate } from '../components/HistoryTable'
 import JobStatusPanel from '../components/JobStatusPanel'
+import PortScanPanel from '../components/PortScanPanel'
+import RemoteWorkersPanel from '../components/RemoteWorkersPanel'
 import { ErrorBlock, Loading } from '../components/StatusBlock'
 import TrDomainsModal from '../components/TrDomainsModal'
 
@@ -215,6 +217,10 @@ export default function AdminPage() {
       {openLogs && <ServiceLogs password={password} service={openLogs} />}
 
       <JobStatusPanel />
+
+      <RemoteWorkersPanel password={password} />
+
+      <PortScanPanel password={password} />
 
       {showTrDomains && <TrDomainsModal onClose={() => setShowTrDomains(false)} />}
     </div>

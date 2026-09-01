@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ptr-worker-country
+  namespace: wimyip
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ptr-worker-country
+  template:
+    metadata:
+      labels:
+        app: ptr-worker-country
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: ptr-worker-country
+          image: ghcr.io/onurkayakiran/wimyip-backend:latest
+          command: ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "-Q", "ptr-country", "--concurrency=1"]
+          envFrom:
+            - configMapRef:
+                name: wimyip-config
+            - secretRef:
+                name: wimyip-secrets

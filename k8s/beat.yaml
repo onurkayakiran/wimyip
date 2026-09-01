@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beat
+  namespace: wimyip
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: beat
+  template:
+    metadata:
+      labels:
+        app: beat
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: beat
+          image: ghcr.io/onurkayakiran/wimyip-backend:latest
+          command: ["celery", "-A", "app.tasks.celery_app", "beat", "--loglevel=info"]
+          envFrom:
+            - configMapRef:
+                name: wimyip-config
+            - secretRef:
+                name: wimyip-secrets

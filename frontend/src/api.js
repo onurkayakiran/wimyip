@@ -23,6 +23,8 @@ export const refreshIpBgp = (ip) =>
 export const getPrefix = (cidr) => request(`/prefixes/${cidr}`)
 export const getPrefixHistory = (cidr) => request(`/prefixes/${cidr}/history`)
 export const refreshPrefixWhois = (cidr) => request(`/prefixes/${cidr}/refresh`, { method: 'POST' })
+export const listPrefixes = (params = {}) =>
+  request(`/prefixes?${new URLSearchParams(params).toString()}`)
 
 export const getAsn = (asn) => request(`/asns/${asn}`)
 export const getAsnHistory = (asn) => request(`/asns/${asn}/history`)
@@ -58,6 +60,46 @@ export const getAdminServiceLogs = (password, service, tail = 200) =>
 
 export const restartAdminService = (password, service) =>
   request(`/admin/services/${encodeURIComponent(service)}/restart`, {
+    method: 'POST',
+    headers: { 'X-Admin-Password': password },
+  })
+
+export const getRemoteWorkerStatus = (password) =>
+  request('/admin/remote-workers/status', { headers: { 'X-Admin-Password': password } })
+
+export const getRemoteWorkerTokens = (password) =>
+  request('/admin/remote-workers/tokens', { headers: { 'X-Admin-Password': password } })
+
+export const createRemoteWorkerToken = (password, label, queues) =>
+  request('/admin/remote-workers/tokens', {
+    method: 'POST',
+    headers: { 'X-Admin-Password': password, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ label, queues }),
+  })
+
+export const revokeRemoteWorkerToken = (password, tokenId) =>
+  request(`/admin/remote-workers/tokens/${encodeURIComponent(tokenId)}/revoke`, {
+    method: 'POST',
+    headers: { 'X-Admin-Password': password },
+  })
+
+export const createPortScanJob = (password, body) =>
+  request('/admin/port-scans', {
+    method: 'POST',
+    headers: { 'X-Admin-Password': password, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+
+export const listPortScanJobs = (password, params = {}) =>
+  request(`/admin/port-scans?${new URLSearchParams(params).toString()}`, {
+    headers: { 'X-Admin-Password': password },
+  })
+
+export const getPortScanJob = (password, jobId) =>
+  request(`/admin/port-scans/${encodeURIComponent(jobId)}`, { headers: { 'X-Admin-Password': password } })
+
+export const resetPortScanJob = (password, jobId) =>
+  request(`/admin/port-scans/${encodeURIComponent(jobId)}/reset`, {
     method: 'POST',
     headers: { 'X-Admin-Password': password },
   })

@@ -54,4 +54,12 @@ INDEX_DEFS: list[tuple[str, object, dict]] = [
     ("prefix_asn_history", "asn", {}),
     ("asn_peeringdb_info", "asn", {"unique": True}),
     ("ingestion_jobs", "job", {"unique": True}),
+    # Uzak (remote) worker API - bkz. remote-api/ ve remote-worker/
+    ("remote_worker_tokens", "token_hash", {"unique": True}),
+    ("remote_worker_status", [("token_id", 1), ("queue", 1)], {"unique": True}),
+    # Admin panelden tetiklenen SYN port taramasi - bkz. remote-api/app/queues/port_scan.py
+    ("port_scan_jobs", "status", {}),
+    ("port_scan_jobs", "created_at", {}),
+    ("port_scan_results", [("job_id", 1), ("ip", 1)], {"unique": True}),
+    ("port_scan_results", "ip_int", {}),
 ]

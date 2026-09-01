@@ -1,0 +1,46 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: remote-api
+  namespace: wimyip
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: remote-api
+  template:
+    metadata:
+      labels:
+        app: remote-api
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: remote-api
+          image: ghcr.io/onurkayakiran/wimyip-remote-api:latest
+          ports:
+            - containerPort: 8000
+          # KASITLI izolasyon: sadece kendi config/secret cifti, ana
+          # wimyip-secrets/wimyip-config ASLA buraya baglanmaz - bu servis
+          # internete acik, dar/amaca-ozel bir servis (bkz. docker-compose.yml
+          # yorumu). ADMIN_PASSWORD/CONTROL_SERVICE_TOKEN/CELERY_BROKER_URL
+          # gibi sirlarin hicbirine erisimi olmamali.
+          envFrom:
+            - configMapRef:
+                name: wimyip-remote-api-config
+            - secretRef:
+                name: wimyip-remote-api-secrets
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: remote-api
+  namespace: wimyip
+spec:
+  type: NodePort
+  selector:
+    app: remote-api
+  ports:
+    - port: 8000
+      targetPort: 8000
+      nodePort: 30082

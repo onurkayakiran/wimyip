@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wimyip-config
+  namespace: wimyip
+data:
+  # Celery broker/backend - in-cluster redis Service
+  CELERY_BROKER_URL: "redis://redis:6379/0"
+  CELERY_RESULT_BACKEND: "redis://redis:6379/0"
+
+  # RDAP zenginlestirme
+  RDAP_RATE_LIMIT_SECONDS: "1.0"
+  RDAP_BATCH_SIZE: "100"
+  RDAP_SYNC_INTERVAL_SECONDS: "300.0"
+
+  # RIPEstat / BGP
+  RIPESTAT_RATE_LIMIT_SECONDS: "0.5"
+  RIPESTAT_BATCH_SIZE: "50"
+  BGP_SYNC_INTERVAL_SECONDS: "300.0"
+
+  # PeeringDB
+  PEERINGDB_RATE_LIMIT_SECONDS: "1.0"
+  PEERINGDB_BATCH_SIZE: "100"
+  PEERINGDB_SYNC_INTERVAL_SECONDS: "300.0"
+
+  # Certificate Transparency log domain kesfi (kullanicinin .env override'i)
+  CT_BATCH_SIZE: "1000"
+  CT_LOG_SYNC_INTERVAL_SECONDS: "120.0"
+
+  # PTR (reverse DNS) taramasi - kendi Unbound resolver'imiz uzerinden
+  # (kullanicinin .env override'lari)
+  PTR_RESOLVER_HOST: "unbound"
+  PTR_RATE_LIMIT_SECONDS: "0.02"
+  PTR_BATCH_SIZE: "200"
+  PTR_SWEEP_INTERVAL_SECONDS: "60.0"
+
+  # Ulke bazli PTR taramasi (ptr-worker-country)
+  TARGET_COUNTRY: "TR"
+  COUNTRY_PTR_BATCH_SIZE: "500"
+  COUNTRY_PTR_RATE_LIMIT_SECONDS: "0.1"
+  COUNTRY_SWEEP_INTERVAL_SECONDS: "60.0"
+
+  # Ulke bazli APEX domain taramasi (apex-worker-country)
+  APEX_COUNTRY_BATCH_SIZE: "50"
+  APEX_COUNTRY_DOMAINS_PER_PREFIX: "200"
+  APEX_COUNTRY_RATE_LIMIT_SECONDS: "0.2"
+  APEX_COUNTRY_SWEEP_INTERVAL_SECONDS: "120.0"
+
+  # A/AAAA/NS/MX/TXT periyodik yeniden dogrulama (kullanicinin .env override'lari)
+  DNS_HISTORY_RATE_LIMIT_SECONDS: "0.08"
+  DNS_HISTORY_BATCH_SIZE: "250"
+  DNS_HISTORY_SYNC_INTERVAL_SECONDS: "300.0"
+
+  # Anasayfa istatistik onbellegi
+  STATS_REFRESH_INTERVAL_SECONDS: "300.0"
+
+  # Admin panelinden tetiklenen SYN port taramasi varsayilanlari
+  PORTSCAN_DEFAULT_DELAY_SECONDS: "5.0"
+  PORTSCAN_MAX_HOSTS: "256"
+
+  # control servisi bu ilk asamada k8s'e dahil degil - backend'in admin
+  # panelindeki "servisi yeniden baslat" ozelligi bu ortamda calismaz.
+  CONTROL_SERVICE_URL: "http://control:8080"

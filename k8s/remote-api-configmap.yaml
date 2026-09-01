@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wimyip-remote-api-config
+  namespace: wimyip
+data:
+  MAX_BATCH_SIZE: "1000"
+  CLAIM_LEASE_SECONDS: "300"
+  RATE_LIMIT_CLAIM_PER_MINUTE: "20"
+  RATE_LIMIT_SUBMIT_PER_MINUTE: "20"
+  PORT_SCAN_LEASE_SECONDS: "21600"

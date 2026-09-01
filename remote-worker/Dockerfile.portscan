@@ -1,0 +1,26 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# setcap komutu icin libcap2-bin gerekli - python:3.12-slim'de varsayilan
+# yok (paylasilan Dockerfile'da hic ihtiyac olmadigi icin de eklenmedi).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libcap2-bin \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt requirements-portscan.txt ./
+RUN pip install --no-cache-dir -r requirements-portscan.txt
+
+COPY worker.py port_scanner.py ./
+
+# SYN taramasi icin ham soket (scapy) gerekiyor. `worker` ROOT DEGIL - bunun
+# yerine sadece python3 binary'sine dosya-yetkisi (file capability) taniyoruz:
+# 'e' (effective) + 'p' (permitted) bitleri, worker calistirinca CAP_NET_RAW'i
+# otomatik ve SADECE bu binary icin aktif eder. Diger 3 worker imajinda
+# (paylasilan Dockerfile) bu adim hic yok - bu yetki SADECE bu image'a ozgu.
+RUN useradd --create-home --uid 1000 worker \
+    && setcap cap_net_raw+eip "$(readlink -f "$(which python3)")"
+
+USER worker
+
+CMD ["python", "worker.py"]

@@ -85,6 +85,10 @@ celery_app.conf.beat_schedule = {
         "task": "ingestion.dns_history_sync",
         "schedule": settings.dns_history_sync_interval_seconds,
     },
+    "stats-cache-refresh": {
+        "task": "ingestion.refresh_stats_cache",
+        "schedule": settings.stats_refresh_interval_seconds,
+    },
 }
 
 
@@ -166,3 +170,10 @@ def dns_history_sync_task():
     from app.ingestion.dns_history_batch import enrich_dns_history_batch
 
     return enrich_dns_history_batch()
+
+
+@celery_app.task(name="ingestion.refresh_stats_cache")
+def refresh_stats_cache_task():
+    from app.ingestion.stats_cache_sync import refresh_stats_cache
+
+    return refresh_stats_cache()

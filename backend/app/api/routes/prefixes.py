@@ -41,6 +41,7 @@ async def _containing_prefix(db, cidr: str) -> dict | None:
 
 @router.get("/prefixes")
 async def list_prefixes(
+    q: str | None = None,
     rir: str | None = None,
     country: str | None = None,
     limit: int = Query(50, le=500),
@@ -52,8 +53,25 @@ async def list_prefixes(
         query["rir"] = rir
     if country:
         query["country"] = country
+    if q:
+        q = q.strip()
+        try:
+            ip_obj = ipaddress.ip_address(q)
+        except ValueError:
+            ip_obj = None
+        if ip_obj is not None:
+            # Girilen deger bir IP - onu ICEREN prefix'i ara (_containing_prefix
+            # ile ayni v4-only kapsam).
+            query["version"] = ip_obj.version
+            query["start_ip"] = {"$lte": int(ip_obj)}
+            query["end_ip"] = {"$gte": int(ip_obj)}
+        else:
+            # domains.py'deki `q` deseniyle ayni: buyuk/kucuk harf duyarsiz alt-dize
+            query["cidr"] = {"$regex": q, "$options": "i"}
 
-    cursor = db.prefixes.find(query).skip(offset).limit(limit)
+    # start_ip index'li oldugu icin bedava - skip/limit'in kararli bir
+    # sirasi olmasi icin (once bu endpoint'te hic sort yoktu).
+    cursor = db.prefixes.find(query).sort("start_ip", 1).skip(offset).limit(limit)
     items = [_clean(doc) async for doc in cursor]
     total = await db.prefixes.count_documents(query)
     return {"total": total, "items": items}
