@@ -17,7 +17,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: remote-api
-          image: ghcr.io/onurkayakiran/wimyip-remote-api:latest
+          image: ghcr.io/onurkayakiran/wimyip-remote-api:181da1d1df36d6a88fa06d177e2b0c8d0c57353f
           ports:
             - containerPort: 8000
           # KASITLI izolasyon: sadece kendi config/secret cifti, ana
