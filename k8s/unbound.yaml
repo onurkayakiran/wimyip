@@ -26,6 +26,26 @@ spec:
       labels:
         app: unbound
     spec:
+      # PVC'ler docker named volume'lerin aksine imajdaki mevcut dosyalari
+      # otomatik kopyalamiyor - bos PVC, imajin gomulu varsayilan config'ini
+      # (unbound.conf + include ettigi a-records/srv-records/forward-records)
+      # gizliyor. Bu initContainer, ayni imajin kendi orijinal dosyalarini
+      # (volume'u FARKLI bir path'e mount ederek gorunur tutup) PVC bosken
+      # bir kereye mahsus PVC'ye kopyalar - Docker'in named volume'de yaptigi
+      # ilk-kopyalama davranisinin k8s karsiligi.
+      initContainers:
+        - name: seed-config
+          image: mvance/unbound:latest
+          command:
+            - sh
+            - -c
+            - |
+              if [ -z "$(ls -A /seed 2>/dev/null)" ]; then
+                cp -a /opt/unbound/etc/unbound/. /seed/
+              fi
+          volumeMounts:
+            - name: data
+              mountPath: /seed
       containers:
         - name: unbound
           image: mvance/unbound:latest
