@@ -8,6 +8,7 @@ from fastapi import APIRouter, Header, HTTPException, Query
 from pydantic import BaseModel
 
 from app.core.config import settings
+from app.core.serialization import clean_doc as _clean
 from app.db.mongo import get_db
 
 router = APIRouter()
@@ -22,29 +23,6 @@ def _require_admin_password(x_admin_password: str = Header(default="")) -> None:
 async def admin_login(x_admin_password: str = Header(default="")):
     _require_admin_password(x_admin_password)
     return {"ok": True}
-
-
-def _clean(doc: dict) -> dict:
-    # remote-api tarafinda token_id/job_id gibi alanlar ham ObjectId olarak
-    # saklaniyor - str'e cevrilmezse jsonable_encoder patlar (gecmiste ayni
-    # sinifta bir ObjectId cursor hatasi zaten yasanmisti, bkz. PLAN.md).
-    # Tek alana ozel kontrol yerine, dict icindeki HERHANGI bir ObjectId
-    # degeri genel olarak string'e ceviriyoruz.
-    doc = dict(doc)
-    doc["id"] = str(doc.pop("_id"))
-    for k, v in doc.items():
-        if isinstance(v, ObjectId):
-            doc[k] = str(v)
-        elif isinstance(v, datetime) and v.tzinfo is None:
-            # Motor/PyMongo BSON datetime'lari her zaman UTC olarak yazilmis
-            # olsa bile naive donduruyor - tzinfo eklenmezse jsonable_encoder
-            # bunu offset'siz bir ISO string'e cevirir, tarayicida
-            # `new Date(...)` bunu YEREL saat sanip UTC'nin onundeki saat
-            # dilimlerinde (orn. TR, UTC+3) zaten calisan bir worker'i bile
-            # "cok eski gorulmus" gostermesine yol aciyordu (bkz.
-            # RemoteWorkersPanel.jsx'teki isHealthy esigi).
-            doc[k] = v.replace(tzinfo=timezone.utc)
-    return doc
 
 
 class CreateRemoteWorkerTokenRequest(BaseModel):

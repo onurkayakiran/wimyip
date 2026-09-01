@@ -298,3 +298,168 @@ li {
   color: #9aa0aa;
   font-size: 0.85rem;
 }
+
+/* --- /monitors: UptimeRobot-tarzi liste gorunumu --- */
+
+.monitors-toolbar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.monitors-toolbar input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #333;
+  background: #0f1115;
+  color: inherit;
+}
+
+.monitor-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.monitor-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.7rem 0.6rem;
+  border-radius: 8px;
+  background: #14161c;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.monitor-row:hover {
+  background: #1c1f27;
+}
+
+.monitor-status-icon {
+  flex: 0 0 auto;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #0f1115;
+}
+
+.monitor-status-icon.status-up {
+  background: #3ecf6e;
+}
+
+.monitor-status-icon.status-down {
+  background: #ff6b6b;
+}
+
+.monitor-status-icon.status-unknown {
+  background: #5a5f6b;
+}
+
+.monitor-row-main {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.monitor-row-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.monitor-row-sub {
+  font-size: 0.82rem;
+  margin-top: 0.15rem;
+}
+
+.monitor-row-interval {
+  flex: 0 0 auto;
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.uptime-bars {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 1.4rem;
+}
+
+.uptime-bar {
+  width: 5px;
+  height: 100%;
+  border-radius: 2px;
+}
+
+.uptime-bar.bar-ok {
+  background: #3ecf6e;
+}
+
+.uptime-bar.bar-bad {
+  background: #ff6b6b;
+}
+
+.monitor-row-pct {
+  flex: 0 0 auto;
+  width: 4.5rem;
+  text-align: right;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+}
+
+.monitor-row-menu {
+  flex: 0 0 auto;
+  position: relative;
+}
+
+.monitor-row-menu > button {
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #3a3f4a;
+  background: #22262f;
+  color: inherit;
+  cursor: pointer;
+}
+
+.dropdown-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 0.25rem;
+  background: #1a1d24;
+  border: 1px solid #3a3f4a;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  min-width: 100px;
+}
+
+.dropdown-menu button {
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdown-menu button:hover {
+  background: #22262f;
+}
+
+.monitor-row-detail {
+  padding: 0 0.6rem 0.6rem;
+}

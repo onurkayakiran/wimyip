@@ -122,7 +122,9 @@ def run_due_checks() -> dict:
     for monitor in due:
         checks = monitor.get("checks", {})
         current_status = monitor.get("current_status", {})
+        status_since = monitor.get("status_since", {})
         new_status = dict(current_status)
+        new_status_since = dict(status_since)
 
         for check_type in CHECK_TYPES:
             if not checks.get(check_type):
@@ -143,6 +145,12 @@ def run_due_checks() -> dict:
             next_state = "up" if result["ok"] else "down"
             previous_state = current_status.get(check_type, "unknown")
             new_status[check_type] = next_state
+            # status_since SADECE durum fiilen degistiginde (veya hic
+            # bilinmiyorken ilk kez belirlendiginde) ilerletilir - "ne
+            # zamandir boyle" suresinin dogru hesaplanabilmesi icin her
+            # kontrolde degil, sadece gecislerde guncelleniyor.
+            if previous_state != next_state:
+                new_status_since[check_type] = now
             if previous_state != "unknown" and previous_state != next_state:
                 _send_status_email(db, monitor, check_type, next_state)
 
@@ -152,6 +160,7 @@ def run_due_checks() -> dict:
             {
                 "$set": {
                     "current_status": new_status,
+                    "status_since": new_status_since,
                     "last_checked_at": now,
                     "next_check_at": now + timedelta(seconds=interval),
                 }
