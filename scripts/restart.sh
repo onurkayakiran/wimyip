@@ -9,7 +9,7 @@
 #   ./scripts/restart.sh --build backend worker   # sadece bunlari yeniden derleyip restart et
 #
 # Servisler: redis, backend, worker, beat, unbound, ptr-worker,
-#            ptr-worker-country, apex-worker-country, frontend, backup, control
+#            ptr-worker-country, apex-worker-country, frontend, remote-api
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

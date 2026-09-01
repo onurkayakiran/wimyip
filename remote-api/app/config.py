@@ -4,8 +4,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     # NOT: bilhassa env_file YOK - docker-compose.yml bu servise sadece
     # asagidaki alanlari acikca veriyor, .env'deki ADMIN_PASSWORD/
-    # CONTROL_SERVICE_TOKEN/CELERY_BROKER_URL gibi sirlar bu container'in
-    # ortamina hic girmiyor.
+    # CELERY_BROKER_URL gibi sirlar bu container'in ortamina hic girmiyor.
     mongo_uri: str = ""
     mongo_db: str = "ipasn"
     max_batch_size: int = 1000

@@ -6,6 +6,7 @@ import DomainDetail from './pages/DomainDetail'
 import Home from './pages/Home'
 import IpLookup from './pages/IpLookup'
 import NameserverDetail from './pages/NameserverDetail'
+import PortScansPage from './pages/PortScansPage'
 import PrefixDetail from './pages/PrefixDetail'
 import SearchResults from './pages/SearchResults'
 
@@ -29,6 +30,7 @@ export default function App() {
           <Route path="/prefix/*" element={<PrefixDetail />} />
           <Route path="/search" element={<SearchResults />} />
           <Route path="/admin" element={<AdminPage />} />
+          <Route path="/admin/port-scans" element={<PortScansPage />} />
         </Routes>
       </main>
     </div>

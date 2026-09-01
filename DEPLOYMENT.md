@@ -9,19 +9,22 @@ kurulduğunu ve bir cluster'da nasıl ayağa kaldırılacağını anlatır.
 docker-compose.yml'deki servislerden **sadece çekirdek olanlar** bu ilk
 aşamada k8s/Argo CD'ye taşındı:
 
-| Dahil | Hariç (şimdilik) | Neden hariç |
-|---|---|---|
-| backend, worker, beat, ptr-worker, ptr-worker-country, apex-worker-country | `control` | `/var/run/docker.sock` mount ediyor; k8s'te sibling container yönetimi için ayrı bir tasarım kararı gerekiyor (host docker.sock mount, DinD, veya farklı bir admin-restart mekanizması). |
-| frontend | `backup` | Basit bir cron-loop container; k8s CronJob'a çevrilmesi ayrı bir karar (bu doküman güncellenene kadar mevcut docker-compose/VM kurulumunda çalışmaya devam ediyor). |
-| remote-api | | |
-| redis, unbound | | |
+| Dahil |
+|---|
+| backend, worker, beat, ptr-worker, ptr-worker-country, apex-worker-country |
+| frontend |
+| remote-api |
+| redis, unbound |
 
 MongoDB harici/managed kalıyor — k8s'te Mongo manifesti yok, sadece bağlantı
 bilgisi Secret olarak veriliyor.
 
-`control` ve `backup` dışarıda bırakıldığı için: backend'in `/admin`
-sayfasındaki "servisi yeniden başlat" özelliği bu k8s dağıtımında
-**çalışmaz** (`CONTROL_SERVICE_URL` hedefi yok). Bu bilinen bir sınırlama.
+`control` (docker.sock erişimli izole servis, admin panelindeki "servisi
+yeniden başlat" özelliği için kullanılıyordu) ve `backup` (otomatik
+mongodump) servisleri artık **tamamen kaldırıldı** — k8s'e taşınmadılar,
+docker-compose'dan da silindiler. Admin panelindeki servis durumu/restart
+özelliği bilerek kaldırıldı; MongoDB için otomatik yedekleme şu an
+kasıtlı olarak yok (bkz. PLAN.md).
 
 ## Servis adı / port sözleşmesi
 
@@ -47,21 +50,20 @@ ptr-worker, ptr-worker-country ve apex-worker-country tarafından da
 
 ## Sır yönetimi
 
-Sırlar (Mongo URI+parola, `ADMIN_PASSWORD`, `CONTROL_SERVICE_TOKEN`) `k8s/`
-klasöründe **değil** — bu klasör Argo CD tarafından otomatik senkronize
-edildiği için oraya gerçek sır koymak, sırların git geçmişinde kalıcı olarak
-saklanması anlamına gelirdi.
+Sırlar (Mongo URI+parola, `ADMIN_PASSWORD`) `k8s/` klasöründe **değil** —
+bu klasör Argo CD tarafından otomatik senkronize edildiği için oraya
+gerçek sır koymak, sırların git geçmişinde kalıcı olarak saklanması
+anlamına gelirdi.
 
 Bunun yerine repo kökünde, `.gitignore`'a eklenmiş iki dosya var (proje
 zaten `.env` için aynı deseni kullanıyor):
 
 - `k8s-secrets.local.env` — backend/worker/beat/ptr-*/apex-* için:
-  `MONGO_URI`, `MONGO_DB`, `ADMIN_PASSWORD`, `CONTROL_SERVICE_TOKEN`.
+  `MONGO_URI`, `MONGO_DB`, `ADMIN_PASSWORD`.
 - `k8s-secrets-remote-api.local.env` — remote-api için, **izole**: sadece
   `MONGO_URI`, `MONGO_DB` (docker-compose.yml'deki tasarımla aynı: bu
   servis internete açık olduğu için `ADMIN_PASSWORD` /
-  `CONTROL_SERVICE_TOKEN` / `CELERY_BROKER_URL` gibi sırlara hiç erişimi
-  olmamalı).
+  `CELERY_BROKER_URL` gibi sırlara hiç erişimi olmamalı).
 
 **Bu iki dosya asla commit edilmemeli.** Cluster'a bir kere elle
 uygulanırlar (aşağıdaki kurulum adımlarına bakın); değerleri değiştiğinde

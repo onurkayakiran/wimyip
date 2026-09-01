@@ -27,9 +27,9 @@ function ProgressBar({ scanned, total }) {
   const scannedCount = scanned ?? 0
   const pct = total > 0 ? Math.min(100, Math.round((scannedCount / total) * 100)) : 0
   return (
-    <div style={{ minWidth: '120px' }}>
-      <div style={{ background: 'var(--border, #444)', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
-        <div style={{ width: `${pct}%`, background: 'var(--accent, #4a9)', height: '100%' }} />
+    <div className="progress-bar-wrap">
+      <div className="progress-bar">
+        <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
       </div>
       <span className="muted" style={{ fontSize: '0.8em' }}>
         {scanned ?? 0}/{total ?? 0} ({pct}%)
@@ -100,6 +100,7 @@ function JobDetail({ password, jobId }) {
 }
 
 function JobsTable({ password }) {
+  const [offset, setOffset] = useState(0)
   const [data, setData] = useState(null)
   const [error, setError] = useState(null)
   const [openJobId, setOpenJobId] = useState(null)
@@ -107,7 +108,7 @@ function JobsTable({ password }) {
   const timerRef = useRef(null)
 
   function load() {
-    listPortScanJobs(password, { limit: JOBS_LIMIT })
+    listPortScanJobs(password, { limit: JOBS_LIMIT, offset })
       .then((res) => {
         setData(res)
         setError(null)
@@ -118,7 +119,7 @@ function JobsTable({ password }) {
   useEffect(() => {
     load()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [offset])
 
   useEffect(() => {
     const items = data?.items || []
@@ -140,78 +141,96 @@ function JobsTable({ password }) {
   }
 
   const items = data?.items || []
+  const total = data?.total ?? 0
+  const hasPrev = offset > 0
+  const hasNext = offset + JOBS_LIMIT < total
 
   return (
-    <div style={{ marginTop: '1rem' }}>
-      <h3>Taramalar</h3>
+    <>
       <ErrorBlock message={error} />
       {!data ? (
         <Loading />
       ) : (
-        <div className="table-scroll">
-          <table>
-            <thead>
-              <tr>
-                <th></th>
-                <th>Hedef</th>
-                <th>Durum</th>
-                <th>İlerleme</th>
-                <th>Şu an</th>
-                <th>Sonuç</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.length === 0 && (
+        <>
+          <div className="table-scroll">
+            <table>
+              <thead>
                 <tr>
-                  <td colSpan={7} className="muted">
-                    Henüz tarama başlatılmadı.
-                  </td>
+                  <th></th>
+                  <th>Hedef</th>
+                  <th>Durum</th>
+                  <th>İlerleme</th>
+                  <th>Şu an</th>
+                  <th>Sonuç</th>
+                  <th></th>
                 </tr>
-              )}
-              {items.map((job) => (
-                <Fragment key={job.id}>
+              </thead>
+              <tbody>
+                {items.length === 0 && (
                   <tr>
-                    <td>
-                      <button onClick={() => setOpenJobId(openJobId === job.id ? null : job.id)}>
-                        {openJobId === job.id ? '▾' : '▸'}
-                      </button>
-                    </td>
-                    <td className="mono">{job.target}</td>
-                    <td>
-                      <StatusBadge status={job.status} />
-                    </td>
-                    <td>
-                      <ProgressBar scanned={job.scanned_count} total={job.host_count} />
-                    </td>
-                    <td className="mono muted">{job.current_ip || '-'}</td>
-                    <td className="muted">
-                      {job.result_summary
-                        ? `${job.result_summary.hosts_with_open_ports ?? 0} açık portlu host`
-                        : '-'}
-                    </td>
-                    <td>
-                      {(job.status === 'claimed' || job.status === 'running') && (
-                        <button onClick={() => handleReset(job)} disabled={resetting === job.id}>
-                          {resetting === job.id ? 'Sıfırlanıyor...' : 'Sıfırla'}
-                        </button>
-                      )}
+                    <td colSpan={7} className="muted">
+                      Henüz tarama başlatılmadı.
                     </td>
                   </tr>
-                  {openJobId === job.id && (
+                )}
+                {items.map((job) => (
+                  <Fragment key={job.id}>
                     <tr>
-                      <td colSpan={7}>
-                        <JobDetail password={password} jobId={job.id} />
+                      <td>
+                        <button onClick={() => setOpenJobId(openJobId === job.id ? null : job.id)}>
+                          {openJobId === job.id ? '▾' : '▸'}
+                        </button>
+                      </td>
+                      <td className="mono">{job.target}</td>
+                      <td>
+                        <StatusBadge status={job.status} />
+                      </td>
+                      <td>
+                        <ProgressBar scanned={job.scanned_count} total={job.host_count} />
+                      </td>
+                      <td className="mono muted">{job.current_ip || '-'}</td>
+                      <td className="muted">
+                        {job.result_summary
+                          ? `${job.result_summary.hosts_with_open_ports ?? 0} açık portlu host`
+                          : '-'}
+                      </td>
+                      <td>
+                        {(job.status === 'claimed' || job.status === 'running') && (
+                          <button onClick={() => handleReset(job)} disabled={resetting === job.id}>
+                            {resetting === job.id ? 'Sıfırlanıyor...' : 'Sıfırla'}
+                          </button>
+                        )}
                       </td>
                     </tr>
-                  )}
-                </Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    {openJobId === job.id && (
+                      <tr>
+                        <td colSpan={7}>
+                          <JobDetail password={password} jobId={job.id} />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="card-header">
+            <span className="muted">
+              {total > 0 ? `${offset + 1}-${Math.min(offset + JOBS_LIMIT, total)} / ${total}` : '0 tarama'}
+            </span>
+            <span>
+              <button onClick={() => setOffset(offset - JOBS_LIMIT)} disabled={!hasPrev}>
+                Önceki
+              </button>{' '}
+              <button onClick={() => setOffset(offset + JOBS_LIMIT)} disabled={!hasNext}>
+                Sonraki
+              </button>
+            </span>
+          </div>
+        </>
       )}
-    </div>
+    </>
   )
 }
 
@@ -269,90 +288,97 @@ export default function PortScanPanel({ password }) {
   const hasNext = offset + PREFIX_LIMIT < total
 
   return (
-    <section className="card">
-      <div className="card-header">
-        <h2>IP Subnet Taraması</h2>
-      </div>
+    <>
+      <section className="card">
+        <div className="card-header">
+          <h2>Yeni Tarama</h2>
+        </div>
 
-      <form onSubmit={handleQuickScan} className="search">
-        <input
-          type="text"
-          placeholder="Hızlı Tara: bir IP veya CIDR yazın (örn. 8.8.8.8)"
-          value={quickTarget}
-          onChange={(e) => setQuickTarget(e.target.value)}
-        />
-        <button type="submit" disabled={!quickTarget.trim()}>
-          Tara
-        </button>
-      </form>
+        <form onSubmit={handleQuickScan} className="search">
+          <input
+            type="text"
+            placeholder="Hızlı Tara: bir IP veya CIDR yazın (örn. 8.8.8.8)"
+            value={quickTarget}
+            onChange={(e) => setQuickTarget(e.target.value)}
+          />
+          <button type="submit" disabled={!quickTarget.trim()}>
+            Tara
+          </button>
+        </form>
 
-      <form onSubmit={handleSubmit} className="search" style={{ marginTop: '0.5rem' }}>
-        <input
-          type="text"
-          placeholder="Subnet ara (CIDR alt-dizesi veya tam IP)..."
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-        />
-        <button type="submit" disabled={searching}>
-          {searching ? 'Aranıyor...' : 'Ara'}
-        </button>
-      </form>
+        <form onSubmit={handleSubmit} className="search" style={{ marginTop: '0.5rem' }}>
+          <input
+            type="text"
+            placeholder="Subnet ara (CIDR alt-dizesi veya tam IP)..."
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+          />
+          <button type="submit" disabled={searching}>
+            {searching ? 'Aranıyor...' : 'Ara'}
+          </button>
+        </form>
 
-      <ErrorBlock message={error} />
+        <ErrorBlock message={error} />
 
-      {!data ? (
-        <Loading />
-      ) : (
-        <>
-          <div className="table-scroll">
-            <table>
-              <thead>
-                <tr>
-                  <th>CIDR</th>
-                  <th>RIR</th>
-                  <th>Ülke</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.length === 0 && (
+        {!data ? (
+          <Loading />
+        ) : (
+          <>
+            <div className="table-scroll">
+              <table>
+                <thead>
                   <tr>
-                    <td colSpan={4} className="muted">
-                      Sonuç bulunamadı.
-                    </td>
+                    <th>CIDR</th>
+                    <th>RIR</th>
+                    <th>Ülke</th>
+                    <th></th>
                   </tr>
-                )}
-                {items.map((p) => (
-                  <tr key={p.cidr}>
-                    <td className="mono">{p.cidr}</td>
-                    <td className="muted">{p.rir}</td>
-                    <td className="muted">{p.country || '-'}</td>
-                    <td>
-                      <button onClick={() => setScanTarget(p.cidr)}>Tara</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {items.length === 0 && (
+                    <tr>
+                      <td colSpan={4} className="muted">
+                        Sonuç bulunamadı.
+                      </td>
+                    </tr>
+                  )}
+                  {items.map((p) => (
+                    <tr key={p.cidr}>
+                      <td className="mono">{p.cidr}</td>
+                      <td className="muted">{p.rir}</td>
+                      <td className="muted">{p.country || '-'}</td>
+                      <td>
+                        <button onClick={() => setScanTarget(p.cidr)}>Tara</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
-          <div className="card-header">
-            <span className="muted">
-              {total > 0 ? `${offset + 1}-${Math.min(offset + PREFIX_LIMIT, total)} / ${total}` : '0 sonuç'}
-            </span>
-            <span>
-              <button onClick={() => setOffset(offset - PREFIX_LIMIT)} disabled={!hasPrev}>
-                Önceki
-              </button>{' '}
-              <button onClick={() => setOffset(offset + PREFIX_LIMIT)} disabled={!hasNext}>
-                Sonraki
-              </button>
-            </span>
-          </div>
-        </>
-      )}
+            <div className="card-header">
+              <span className="muted">
+                {total > 0 ? `${offset + 1}-${Math.min(offset + PREFIX_LIMIT, total)} / ${total}` : '0 sonuç'}
+              </span>
+              <span>
+                <button onClick={() => setOffset(offset - PREFIX_LIMIT)} disabled={!hasPrev}>
+                  Önceki
+                </button>{' '}
+                <button onClick={() => setOffset(offset + PREFIX_LIMIT)} disabled={!hasNext}>
+                  Sonraki
+                </button>
+              </span>
+            </div>
+          </>
+        )}
+      </section>
 
-      <JobsTable key={jobsVersion} password={password} />
+      <section className="card">
+        <div className="card-header">
+          <h2>Taramalar</h2>
+        </div>
+        <JobsTable key={jobsVersion} password={password} />
+      </section>
 
       {scanTarget && (
         <PortScanTriggerModal
@@ -362,6 +388,6 @@ export default function PortScanPanel({ password }) {
           onCreated={() => setJobsVersion((v) => v + 1)}
         />
       )}
-    </section>
+    </>
   )
 }

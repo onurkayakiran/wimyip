@@ -177,6 +177,24 @@ button:disabled {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+.progress-bar-wrap {
+  min-width: 120px;
+}
+
+.progress-bar {
+  background: #2a2d34;
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  background: #4f7cff;
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
 .my-ip-banner {
   display: flex;
   flex-direction: column;

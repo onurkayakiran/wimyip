@@ -23,8 +23,8 @@ spec:
           # KASITLI izolasyon: sadece kendi config/secret cifti, ana
           # wimyip-secrets/wimyip-config ASLA buraya baglanmaz - bu servis
           # internete acik, dar/amaca-ozel bir servis (bkz. docker-compose.yml
-          # yorumu). ADMIN_PASSWORD/CONTROL_SERVICE_TOKEN/CELERY_BROKER_URL
-          # gibi sirlarin hicbirine erisimi olmamali.
+          # yorumu). ADMIN_PASSWORD/CELERY_BROKER_URL gibi sirlarin
+          # hicbirine erisimi olmamali.
           envFrom:
             - configMapRef:
                 name: wimyip-remote-api-config

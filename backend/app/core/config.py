@@ -59,12 +59,8 @@ class Settings(BaseSettings):
     dns_history_batch_size: int = 100
     dns_history_sync_interval_seconds: float = 300.0
 
-    # /admin sayfasi: servis durumu/loglarini gorme, servisleri yeniden
-    # baslatma. control_service_* control servisiyle (docker.sock erisimi
-    # olan izole servis) konusmak icin.
+    # /admin sayfasi: uzak worker/token yonetimi, IP subnet taramasi vb.
     admin_password: str = ""
-    control_service_url: str = "http://control:8080"
-    control_service_token: str = ""
 
     # Anasayfa istatistik sayaclarini (prefixes/asns/domains) periyodik
     # olarak onbellege alan gorev - domains 16M+ oldugu icin canli

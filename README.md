@@ -31,11 +31,6 @@ olmalı — bu proje `MONGO_INITDB_ROOT_*` ile otomatik kullanıcı/veritabanı
 oluşturmaz, sadece bağlanır. Koleksiyonlar ve index'ler ilk yazımda
 uygulama tarafından otomatik oluşturulur (bkz. `backend/app/db/index_defs.py`).
 
-`MONGO_IMAGE_TAG` değişkeni artık yerel bir mongod için değil, `backup`
-servisinin `mongodump`/`mongorestore` araçlarını harici sunucunuzun
-MongoDB sürümüyle uyumlu tutmak için kullanılır (örn. sunucunuz eski/AVX
-desteklemeyen bir MongoDB 4.4 çalıştırıyorsa burayı da `4.4` yapın).
-
 ## RIR verisini manuel senkronize etme
 
 ```bash
@@ -145,10 +140,11 @@ domainlere hizmet verdiği, hepsi tek bir sorguda.
 ./scripts/restart.sh --build backend worker  # sadece bunları yeniden derleyip restart et
 ```
 
-Servis adları: `mongodb`, `redis`, `backend`, `worker`, `beat`, `unbound`,
-`ptr-worker`, `frontend`, `backup`. Kod değişikliği yaptıysanız `--build`
-kullanın; sadece bir servisi (örn. takılı kalmış bir görevi) yeniden
-başlatmak için düz haliyle yeterli.
+Servis adları: `redis`, `backend`, `worker`, `beat`, `unbound`,
+`ptr-worker`, `ptr-worker-country`, `apex-worker-country`, `frontend`,
+`remote-api`. Kod değişikliği yaptıysanız `--build` kullanın; sadece bir
+servisi (örn. takılı kalmış bir görevi) yeniden başlatmak için düz haliyle
+yeterli.
 
 ## Arka plan görevlerini izleme
 
@@ -185,47 +181,6 @@ React + Vite tabanlı çok sayfalı arayüz (http://localhost:3001):
 - **ASN sayfası**: RIR + RDAP geçmişi + PeeringDB profili + BGP duyurulan prefixler (hepsi ayrı ayrı "Şimdi Sorgula" ile anlık tetiklenebilir)
 - **Domain sayfası**: A/AAAA + NS geçmiş zaman çizelgesi, PTR bağlantıları, "DNS Şimdi Sorgula"
 - **Nameserver sayfası**: nameserver'ın kendi IP geçmişi + hizmet verdiği domainler
-
-## Yedekleme / Taşıma
-
-Üç katmanlı bir yedekleme yapısı var:
-
-**1. Otomatik, sürekli yedekleme** — `backup` servisi, `docker compose up -d`
-ile diğerleriyle birlikte otomatik başlar; varsayılan olarak her 24 saatte
-bir `mongodump` alır ve son 7 yedeği tutar (eskiler otomatik silinir). Bu
-yedekler Docker'ın kendi yönettiği bir volume'de (`backup_data`) durur —
-host'a canlı bağlama (bind-mount) **kasıtlı olarak** kullanılmıyor çünkü
-macOS'ta Docker Desktop'ın `~/Desktop` altındaki yollara dosya paylaşımı
-için ayrıca izin istemesi gerekiyor ve bu, projenin "her yerde çalışsın"
-hedefiyle çelişen, kullanıcıya özel bir kurulum adımı olurdu.
-
-```bash
-# Docker'ın icindeki otomatik yedekleri host'taki ./backups/ klasorune cikar
-./scripts/export_backups.sh
-```
-
-Sıklık/tutulan yedek sayısı `.env`'deki `BACKUP_INTERVAL_SECONDS` (sn) ve
-`BACKUP_RETENTION_COUNT` ile ayarlanır.
-
-**2. Manuel, anlık yedekleme** — istediğiniz an, doğrudan host'taki
-`./backups/` klasörüne yazar (bu, host shell'inin kendi dosya yazması
-olduğu için yukarıdaki izin kısıtına takılmaz):
-
-```bash
-./scripts/backup.sh
-```
-
-**3. Geri yükleme**:
-
-```bash
-./scripts/restore.sh backups/ipasn_backup_....archive.gz  # belirli bir yedek
-./scripts/restore_latest.sh                                 # en guncel yedek (backups/ icindeki)
-```
-
-Projeyi başka bir makineye taşımak için: proje klasörünü + `./backups/`
-içindeki (gerekirse önce `export_backups.sh` ile çıkarılmış) en güncel
-yedeği kopyalayın, `.env` oluşturun, `docker compose up -d --build`
-çalıştırın, ardından `./scripts/restore_latest.sh` ile veriyi geri yükleyin.
 
 ## Mimari ve yol haritası
 

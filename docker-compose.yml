@@ -5,24 +5,11 @@ services:
     volumes:
       - redis_data:/data
 
-  control:
-    build: ./control
-    restart: unless-stopped
-    # SADECE bu servis docker.sock'a erisir - backend/frontend'in hicbiri
-    # dogrudan erismiyor. Disariya hicbir port acmiyor, sadece compose'un
-    # internal agindan (CONTROL_SERVICE_TOKEN ile) erisilebilir.
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      CONTROL_SERVICE_TOKEN: ${CONTROL_SERVICE_TOKEN}
-
   backend:
     build: ./backend
     restart: unless-stopped
     env_file: .env
     environment:
-      CONTROL_SERVICE_URL: http://control:8080
-      CONTROL_SERVICE_TOKEN: ${CONTROL_SERVICE_TOKEN}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     # MONGO_URI ayni host'ta ama AYRI bir compose projesinde calisan bir
     # mongo'yu (orn. mongo-external/) isaret ediyorsa "localhost" container'in
@@ -32,8 +19,6 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       redis:
-        condition: service_started
-      control:
         condition: service_started
     ports:
       - "${BACKEND_PORT:-8000}:8000"
@@ -133,15 +118,13 @@ services:
   remote-api:
     build: ./remote-api
     restart: unless-stopped
-    # control servisiyle ayni felsefe (izole servis, sadece ihtiyaci olan
-    # sirri alir) ama tersine cevrilmis: bu servis BILHASSA internete acik
+    # Izole/dar-kapsamli bir servis: bu servis BILHASSA internete acik
     # olacak sekilde sertlestirilmis (token bazli auth, rate limit, katı
     # input dogrulama - bkz. remote-api/app). env_file KULLANMIYORUZ, sadece
     # asagidaki degiskenler aciqca veriliyor - boylece bu container'in
-    # ortaminda ADMIN_PASSWORD/CONTROL_SERVICE_TOKEN/CELERY_BROKER_URL gibi
-    # sirlar hic bulunmuyor. redis/control'e de kasitli olarak depends_on
-    # YOK - bu servis onlara hic erisemiyor, disariya sadece (harici) Mongo'ya
-    # baglaniyor.
+    # ortaminda ADMIN_PASSWORD/CELERY_BROKER_URL gibi sirlar hic bulunmuyor.
+    # redis'e de kasitli olarak depends_on YOK - bu servis ona hic
+    # erisemiyor, disariya sadece (harici) Mongo'ya baglaniyor.
     environment:
       MONGO_URI: ${MONGO_URI}
       MONGO_DB: ${MONGO_DB}
@@ -163,33 +146,6 @@ services:
     ports:
       - "${FRONTEND_PORT:-3000}:80"
 
-  backup:
-    build:
-      context: ./backup
-      args:
-        MONGO_IMAGE_TAG: ${MONGO_IMAGE_TAG:-7}
-    restart: unless-stopped
-    volumes:
-      # NOT: host'a dogrudan bind-mount (./backups:/backups) KULLANMIYORUZ.
-      # macOS'ta Docker Desktop'in "Desktop" klasoru altindaki yollara canli
-      # dosya paylasimi (bind-mount) icin ayrica izin verilmesi gerekiyor ve
-      # bu, projenin herhangi bir yerde calismasi (tasinabilirlik) hedefiyle
-      # celisen, kullaniciya ozel/manuel bir kurulum adimi olurdu. Bunun yerine
-      # yedekler Docker'in kendi yonettigi bir named volume'da tutulur;
-      # scripts/export_backups.sh ile istendiginde `docker cp` kullanilarak
-      # (bu islem soz konusu izne takilmiyor) host'taki ./backups klasorune
-      # cikarilabilir. Ayni sebeple backup-loop.sh de bind-mount yerine
-      # ./backup/Dockerfile ile image icine gomulur.
-      - backup_data:/backups
-    environment:
-      MONGO_URI: ${MONGO_URI}
-      MONGO_DB: ${MONGO_DB}
-      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
-      BACKUP_RETENTION_COUNT: ${BACKUP_RETENTION_COUNT:-7}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-
 volumes:
   redis_data:
   unbound_data:
-  backup_data:
