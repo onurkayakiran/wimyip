@@ -43,6 +43,7 @@ celery_app.conf.task_routes = {
     "ingestion.ptr_sweep": {"queue": "ptr"},
     "ingestion.ptr_sweep_country": {"queue": "ptr-country"},
     "ingestion.domain_apex_scan_country": {"queue": "apex-country"},
+    "ingestion.run_monitor_checks": {"queue": "monitor-checks"},
 }
 celery_app.conf.beat_schedule = {
     "daily-rir-sync": {
@@ -88,6 +89,10 @@ celery_app.conf.beat_schedule = {
     "stats-cache-refresh": {
         "task": "ingestion.refresh_stats_cache",
         "schedule": settings.stats_refresh_interval_seconds,
+    },
+    "monitor-checks-tick": {
+        "task": "ingestion.run_monitor_checks",
+        "schedule": settings.monitor_check_tick_seconds,
     },
 }
 
@@ -177,3 +182,10 @@ def refresh_stats_cache_task():
     from app.ingestion.stats_cache_sync import refresh_stats_cache
 
     return refresh_stats_cache()
+
+
+@celery_app.task(name="ingestion.run_monitor_checks")
+def run_monitor_checks_task():
+    from app.ingestion.monitor_checks import run_due_checks
+
+    return run_due_checks()

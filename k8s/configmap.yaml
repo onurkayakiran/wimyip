@@ -57,3 +57,25 @@ data:
   # Admin panelinden tetiklenen SYN port taramasi varsayilanlari
   PORTSCAN_DEFAULT_DELAY_SECONDS: "5.0"
   PORTSCAN_MAX_HOSTS: "256"
+
+  # Kullanici paneli - JWT suresi (dakika)
+  JWT_EXPIRE_MINUTES: "10080"
+
+  # Domain monitoring (HTTP/HTTPS/Ping)
+  MAX_MONITORS_PER_USER: "20"
+  MIN_MONITOR_INTERVAL_SECONDS: "60"
+  DEFAULT_MONITOR_INTERVAL_SECONDS: "300"
+  MONITOR_CHECK_BATCH_SIZE: "50"
+  MONITOR_CHECK_TICK_SECONDS: "30.0"
+  MONITOR_HTTP_TIMEOUT_SECONDS: "10.0"
+  MONITOR_PING_TIMEOUT_SECONDS: "5.0"
+  MONITOR_RESULT_RETENTION_DAYS: "30"
+
+  # Durum degisimi e-posta bildirimi icin SMTP (kimlik bilgileri sir,
+  # wimyip-secrets'ta - burada sadece sir OLMAYAN baglanti bilgileri).
+  # Mailgun 587: duz baglanti + STARTTLS ile yukseltme (smtp_use_tls=true
+  # zaten mailer.py'de bunu yapiyor, implicit TLS/SMTPS - port 465 - degil).
+  SMTP_HOST: "smtp.mailgun.org"
+  SMTP_PORT: "587"
+  SMTP_FROM_ADDRESS: "postmaster@kelimeogren.com"
+  SMTP_USE_TLS: "true"

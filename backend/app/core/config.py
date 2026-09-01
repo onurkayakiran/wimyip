@@ -74,6 +74,35 @@ class Settings(BaseSettings):
     portscan_default_delay_seconds: float = 5.0
     portscan_max_hosts: int = 256
 
+    # Kullanici paneli (kayit/giris) - JWT tabanli, cookie/session DEGIL
+    # (Authorization: Bearer header, mevcut CORS allow_origins=["*"] ile
+    # cookie tabanli bir semaya gore cok daha basit/uyumlu). Mutlaka
+    # degistirin - varsayilan deger sadece yerel gelistirme icin.
+    jwt_secret: str = "change_me_please"
+    jwt_expire_minutes: int = 10080  # 7 gun, tek access token, refresh yok
+
+    # Domain monitoring (HTTP/HTTPS/Ping) - kullanici basina kaynak
+    # tuketimini sinirlamak icin makul varsayilanlar.
+    max_monitors_per_user: int = 20
+    min_monitor_interval_seconds: int = 60
+    default_monitor_interval_seconds: int = 300
+    monitor_check_batch_size: int = 50
+    monitor_check_tick_seconds: float = 30.0
+    monitor_http_timeout_seconds: float = 10.0
+    monitor_ping_timeout_seconds: float = 5.0
+    # Bir monitor sonucu bu kadar gun sonra otomatik silinir (TTL index) -
+    # domains koleksiyonunun sinirsiz buyumesiyle yasanan performans
+    # sorununu (bkz. PLAN.md) burada bastan onlemek icin.
+    monitor_result_retention_days: int = 30
+
+    # Durum degisiminde (up->down / down->up) e-posta bildirimi icin SMTP.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from_address: str = ""
+    smtp_use_tls: bool = True
+
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
 

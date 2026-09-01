@@ -52,6 +52,15 @@ jobs:
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/wimyip-backend:${{ github.sha }}
 
+      - name: Build and push monitor-worker image
+        if: needs.changes.outputs.backend == 'true'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile.monitor
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/wimyip-monitor-worker:${{ github.sha }}
+
       - name: Build and push frontend image
         if: needs.changes.outputs.frontend == 'true'
         uses: docker/build-push-action@v6
@@ -78,6 +87,7 @@ jobs:
             for f in k8s/backend.yaml k8s/worker.yaml k8s/beat.yaml k8s/ptr-worker.yaml k8s/ptr-worker-country.yaml k8s/apex-worker-country.yaml; do
               sed -i "s|image: ghcr.io/${{ github.repository_owner }}/wimyip-backend:.*|image: ghcr.io/${{ github.repository_owner }}/wimyip-backend:${{ github.sha }}|" "$f"
             done
+            sed -i "s|image: ghcr.io/${{ github.repository_owner }}/wimyip-monitor-worker:.*|image: ghcr.io/${{ github.repository_owner }}/wimyip-monitor-worker:${{ github.sha }}|" k8s/monitor-worker.yaml
           fi
 
           if [ "${{ needs.changes.outputs.frontend }}" = "true" ]; then

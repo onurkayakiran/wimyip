@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitor-worker
+  namespace: wimyip
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: monitor-worker
+  template:
+    metadata:
+      labels:
+        app: monitor-worker
+    spec:
+      imagePullSecrets:
+        - name: ghcr-secret
+      containers:
+        - name: monitor-worker
+          image: ghcr.io/onurkayakiran/wimyip-monitor-worker:latest
+          command: ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "-Q", "monitor-checks", "--concurrency=4"]
+          # ICMP ping icin ham soket gerekiyor - imaj SADECE python3
+          # binary'sine setcap ile bu yetkiyi tanimis (bkz.
+          # backend/Dockerfile.monitor); burada k8s'in cap_add/cap_drop
+          # karsiligiyla bunu fiilen etkinlestiriyoruz. Bu manifest setinde
+          # securityContext kullanan ilk (ve tek) Deployment.
+          securityContext:
+            capabilities:
+              drop: ["ALL"]
+              add: ["NET_RAW"]
+          envFrom:
+            - configMapRef:
+                name: wimyip-config
+            - secretRef:
+                name: wimyip-secrets

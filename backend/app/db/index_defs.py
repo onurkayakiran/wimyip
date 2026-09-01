@@ -10,6 +10,8 @@
 # birakabilecegi bir yaris durumu yaratti (gercekte oldu, nameserver_ip_history
 # koleksiyonunda). Artik her sureç kendi index'lerini kendisi garanti ediyor.
 #
+from app.core.config import settings
+
 # Her eleman: (collection_name, keys, kwargs)
 INDEX_DEFS: list[tuple[str, object, dict]] = [
     ("prefixes", "cidr", {"unique": True}),
@@ -62,4 +64,18 @@ INDEX_DEFS: list[tuple[str, object, dict]] = [
     ("port_scan_jobs", "created_at", {}),
     ("port_scan_results", [("job_id", 1), ("ip", 1)], {"unique": True}),
     ("port_scan_results", "ip_int", {}),
+    # Kullanici paneli + domain monitoring (HTTP/HTTPS/Ping)
+    ("users", "username", {"unique": True}),
+    ("users", "email", {"unique": True}),
+    ("monitors", [("user_id", 1), ("target", 1)], {"unique": True}),
+    ("monitors", "next_check_at", {}),
+    ("monitor_results", [("monitor_id", 1), ("checked_at", -1)], {}),
+    # TTL index: monitor_result_retention_days sonra otomatik silinir -
+    # domains koleksiyonunun sinirsiz buyumesiyle yasanan performans
+    # sorununu (bkz. PLAN.md) bastan onlemek icin.
+    (
+        "monitor_results",
+        "checked_at",
+        {"expireAfterSeconds": settings.monitor_result_retention_days * 86400},
+    ),
 ]

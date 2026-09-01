@@ -12,6 +12,7 @@ aşamada k8s/Argo CD'ye taşındı:
 | Dahil |
 |---|
 | backend, worker, beat, ptr-worker, ptr-worker-country, apex-worker-country |
+| monitor-worker (kullanıcı domain monitoring — HTTP/HTTPS/Ping) |
 | frontend |
 | remote-api |
 | redis, unbound |
@@ -44,9 +45,16 @@ NodePort numaraları `k8s/frontend.yaml` ve `k8s/remote-api.yaml` içinde
 
 Image'lar: `ghcr.io/onurkayakiran/wimyip-backend`,
 `ghcr.io/onurkayakiran/wimyip-frontend`,
-`ghcr.io/onurkayakiran/wimyip-remote-api`. backend image'ı worker, beat,
-ptr-worker, ptr-worker-country ve apex-worker-country tarafından da
-(farklı `command` ile) paylaşılıyor.
+`ghcr.io/onurkayakiran/wimyip-remote-api`,
+`ghcr.io/onurkayakiran/wimyip-monitor-worker`. `wimyip-backend` image'ı
+worker, beat, ptr-worker, ptr-worker-country ve apex-worker-country
+tarafından da (farklı `command` ile) paylaşılıyor. `monitor-worker` AYRI
+bir image (`backend/Dockerfile.monitor`, aynı `backend/app` kodu ama farklı
+Dockerfile) — ICMP ping için gereken `CAP_NET_RAW` yetkisi SADECE bu
+image'a `setcap` ile tanınmış (bkz. `remote-worker/Dockerfile.portscan` ile
+aynı desen); `k8s/monitor-worker.yaml`'daki `securityContext.capabilities`
+bunu çalışma zamanında etkinleştiriyor — bu manifest setindeki tek
+`securityContext` kullanımı.
 
 ## Sır yönetimi
 
@@ -58,8 +66,12 @@ anlamına gelirdi.
 Bunun yerine repo kökünde, `.gitignore`'a eklenmiş iki dosya var (proje
 zaten `.env` için aynı deseni kullanıyor):
 
-- `k8s-secrets.local.env` — backend/worker/beat/ptr-*/apex-* için:
-  `MONGO_URI`, `MONGO_DB`, `ADMIN_PASSWORD`.
+- `k8s-secrets.local.env` — backend/worker/beat/ptr-*/apex-*/monitor-worker
+  için: `MONGO_URI`, `MONGO_DB`, `ADMIN_PASSWORD`, `JWT_SECRET` (kullanıcı
+  paneli oturum imzalama sırrı — mutlaka gerçek/rastgele bir değer olmalı,
+  `openssl rand -hex 32`), `SMTP_USERNAME`, `SMTP_PASSWORD` (monitor
+  down/up e-posta bildirimi için — boş bırakılırsa e-posta gönderilmez,
+  monitoring'in kendisi etkilenmez).
 - `k8s-secrets-remote-api.local.env` — remote-api için, **izole**: sadece
   `MONGO_URI`, `MONGO_DB` (docker-compose.yml'deki tasarımla aynı: bu
   servis internete açık olduğu için `ADMIN_PASSWORD` /
@@ -167,7 +179,9 @@ commit'i atabilmesi için).
 push edildiğinde `.github/workflows/deploy.yml` tetiklenir: sadece değişen
 bileşenin image'ı build edilip GHCR'a atılır, ilgili `k8s/*.yaml`
 dosyalarındaki `image:` satırı yeni SHA ile güncellenip commit'lenir, Argo
-CD bu commit'i görüp cluster'ı senkronize eder.
+CD bu commit'i görüp cluster'ı senkronize eder. `backend/**` değiştiğinde
+`wimyip-backend` ile birlikte `wimyip-monitor-worker` da (`Dockerfile.monitor`
+ile, aynı context) build edilir — ikisi aynı kaynak koddan geldiği için.
 
 `k8s/**` altındaki değişiklikler workflow'u tekrar tetiklemez
 (`paths-ignore`) — bu olmasaydı build → commit → build → commit sonsuz

@@ -115,6 +115,25 @@ services:
       redis:
         condition: service_started
 
+  monitor-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.monitor
+    restart: unless-stopped
+    # ICMP ping icin ham soket gerekiyor - worker-portscan (remote-worker/)
+    # ile ayni desen: image'da SADECE python3 binary'sine setcap ile
+    # taninmis bir yetki var, burada onu fiilen aktif ediyoruz. cap_drop:ALL
+    # ile baslayip SADECE NET_RAW'i geri ekliyoruz.
+    cap_drop: [ALL]
+    cap_add: [NET_RAW]
+    command: celery -A app.tasks.celery_app worker --loglevel=info -Q monitor-checks --concurrency=${MONITOR_WORKER_CONCURRENCY:-4}
+    env_file: .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      redis:
+        condition: service_started
+
   remote-api:
     build: ./remote-api
     restart: unless-stopped

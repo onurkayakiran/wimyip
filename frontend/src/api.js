@@ -89,3 +89,37 @@ export const resetPortScanJob = (password, jobId) =>
     method: 'POST',
     headers: { 'X-Admin-Password': password },
   })
+
+export const registerUser = (username, email, password) =>
+  request('/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, email, password }),
+  })
+
+export const loginUser = (username, password) =>
+  request('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  })
+
+const authHeaders = (token) => ({ Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' })
+
+export const listMonitors = (token) => request('/monitors', { headers: authHeaders(token) })
+
+export const getMonitor = (token, monitorId) =>
+  request(`/monitors/${encodeURIComponent(monitorId)}`, { headers: authHeaders(token) })
+
+export const createMonitor = (token, body) =>
+  request('/monitors', { method: 'POST', headers: authHeaders(token), body: JSON.stringify(body) })
+
+export const updateMonitor = (token, monitorId, body) =>
+  request(`/monitors/${encodeURIComponent(monitorId)}`, {
+    method: 'PATCH',
+    headers: authHeaders(token),
+    body: JSON.stringify(body),
+  })
+
+export const deleteMonitor = (token, monitorId) =>
+  request(`/monitors/${encodeURIComponent(monitorId)}`, { method: 'DELETE', headers: authHeaders(token) })

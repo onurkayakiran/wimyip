@@ -1,0 +1,28 @@
+FROM python:3.12-slim
+
+WORKDIR /app
+
+# setcap komutu icin libcap2-bin gerekli - paylasilan Dockerfile'da hic
+# ihtiyac olmadigi icin orada yok (remote-worker/Dockerfile.portscan ile
+# ayni desen).
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libcap2-bin \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt requirements-monitor.txt ./
+RUN pip install --no-cache-dir -r requirements-monitor.txt
+
+COPY app ./app
+
+# ICMP ping ham soket gerektirir. appuser ROOT DEGIL - sadece python3
+# binary'sine dosya-yetkisi (file capability) taniyoruz: 'e' (effective) +
+# 'p' (permitted) bitleri, calistirinca CAP_NET_RAW'i otomatik ve SADECE bu
+# binary icin aktif eder (remote-worker/Dockerfile.portscan ile ayni desen).
+# Diger backend-turevi image'larda (Dockerfile) bu adim hic yok.
+RUN useradd --create-home --uid 1000 appuser \
+    && chown -R appuser:appuser /app \
+    && setcap cap_net_raw+eip "$(readlink -f "$(which python3)")"
+
+USER appuser
+
+CMD ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "-Q", "monitor-checks", "--concurrency=4"]
