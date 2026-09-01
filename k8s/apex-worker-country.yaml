@@ -17,7 +17,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: apex-worker-country
-          image: ghcr.io/onurkayakiran/wimyip-backend:23506b75a4a16c7391301a7ceabeae6d89d6b555
+          image: ghcr.io/onurkayakiran/wimyip-backend:d282887a92cb5e45b55e72a1b42952a3595d84a5
           command: ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "-Q", "apex-country", "--concurrency=1"]
           envFrom:
             - configMapRef:
