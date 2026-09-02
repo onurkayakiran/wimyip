@@ -16,6 +16,7 @@ from app.api.routes import (
     scans,
     search,
     seo,
+    sitemap,
     stats,
 )
 from app.db.mongo import ensure_indexes
@@ -49,3 +50,4 @@ app.include_router(auth.router, prefix="/api")
 app.include_router(monitors.router, prefix="/api")
 app.include_router(scans.router, prefix="/api")
 app.include_router(seo.router, prefix="/api")
+app.include_router(sitemap.router, prefix="/api")
