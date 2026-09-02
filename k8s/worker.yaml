@@ -17,7 +17,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: worker
-          image: ghcr.io/onurkayakiran/wimyip-backend:b4b06833281e9bc80b8033c14d1991315a221fbb
+          image: ghcr.io/onurkayakiran/wimyip-backend:a91f3a14436a30673cbc700429106e9b1634c96c
           command: ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "--concurrency=6"]
           envFrom:
             - configMapRef:

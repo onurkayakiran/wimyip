@@ -17,7 +17,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: frontend
-          image: ghcr.io/onurkayakiran/wimyip-frontend:3ea9874cb6ab95f511e4aec96661d57044ca3a3f
+          image: ghcr.io/onurkayakiran/wimyip-frontend:a91f3a14436a30673cbc700429106e9b1634c96c
           ports:
             - containerPort: 80
 ---
