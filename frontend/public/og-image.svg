@@ -1,0 +1,17 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" fill="#0f1115"/>
+
+  <g transform="translate(150,315)" stroke="#4f7cff" stroke-width="3" fill="none" opacity="0.9">
+    <circle r="150"/>
+    <ellipse rx="60" ry="150"/>
+    <ellipse rx="130" ry="150" opacity="0.7"/>
+    <line x1="-150" y1="0" x2="150" y2="0"/>
+    <line x1="-140" y1="-70" x2="140" y2="-70"/>
+    <line x1="-140" y1="70" x2="140" y2="70"/>
+    <line x1="-95" y1="-125" x2="95" y2="-125"/>
+    <line x1="-95" y1="125" x2="95" y2="125"/>
+  </g>
+
+  <text x="430" y="330" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="88" font-weight="700" fill="#ffffff">wimyip<tspan fill="#6d93ff">.net</tspan></text>
+  <text x="432" y="390" font-family="system-ui, -apple-system, Segoe UI, Roboto, sans-serif" font-size="34" fill="#9aa4b5">IP / ASN / Domain / WHOIS History Archive</text>
+</svg>

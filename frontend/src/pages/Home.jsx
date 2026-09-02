@@ -4,12 +4,20 @@ import { Link } from 'react-router-dom'
 import { getMyIp, getStats } from '../api'
 import JobStatusPanel from '../components/JobStatusPanel'
 import { ErrorBlock, Loading } from '../components/StatusBlock'
+import useSeoMeta from '../hooks/useSeoMeta'
 
 export default function Home() {
   const { t } = useTranslation()
   const [stats, setStats] = useState(null)
   const [myIp, setMyIp] = useState(null)
   const [error, setError] = useState(null)
+
+  useSeoMeta({
+    title: 'IP / ASN / Domain / WHOIS History Archive',
+    description:
+      'Free, searchable archive of IP addresses, ASNs, IP prefixes, domains and nameservers with WHOIS ownership history, BGP announcement history, PeeringDB profiles and DNS record history.',
+    path: '/',
+  })
 
   useEffect(() => {
     getStats().then(setStats).catch((e) => setError(e.message))

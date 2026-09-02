@@ -208,7 +208,7 @@
   },
   "scans": {
     "title": "IP Scan",
-    "premium_required": "This feature requires a <bold>premium</bold> subscription. Please contact us to upgrade to premium.",
+    "premium_required": "This feature requires a <bold>premium</bold> subscription. To upgrade, please email onur@kayakiran.net.",
     "new_scan": "New Scan",
     "cidr_list_title": "CIDR List",
     "quick_scan_placeholder": "Quick scan: enter an IP or CIDR (e.g. 8.8.8.8)",

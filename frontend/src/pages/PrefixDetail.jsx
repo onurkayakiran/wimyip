@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom'
 import { getPrefix, getPrefixHistory, refreshPrefixWhois } from '../api'
 import HistoryTable, { formatDate } from '../components/HistoryTable'
 import { ErrorBlock, Loading } from '../components/StatusBlock'
+import useSeoMeta from '../hooks/useSeoMeta'
 
 export default function PrefixDetail() {
   const { t } = useTranslation()
@@ -14,6 +15,12 @@ export default function PrefixDetail() {
   const [history, setHistory] = useState(null)
   const [error, setError] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
+
+  useSeoMeta({
+    title: cidr,
+    description: `IP prefix / CIDR lookup for ${cidr}: RIR allocation and WHOIS ownership history.`,
+    path: `/prefix/${cidr}`,
+  })
 
   function load() {
     setError(null)

@@ -1,0 +1,11 @@
+User-agent: *
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+Disallow: /admin
+Disallow: /monitors
+Disallow: /scans
+Disallow: /profile
+Disallow: /search
+
+Sitemap: https://wimyip.net/sitemap.xml

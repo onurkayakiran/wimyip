@@ -208,7 +208,7 @@
   },
   "scans": {
     "title": "Сканирование IP",
-    "premium_required": "Эта функция требует подписки <bold>Premium</bold>. Пожалуйста, свяжитесь с нами для перехода на Premium.",
+    "premium_required": "Эта функция требует подписки <bold>Premium</bold>. Чтобы перейти на Premium, напишите на onur@kayakiran.net.",
     "new_scan": "Новое сканирование",
     "cidr_list_title": "Список CIDR",
     "quick_scan_placeholder": "Быстрое сканирование: введите IP или CIDR (напр. 8.8.8.8)",

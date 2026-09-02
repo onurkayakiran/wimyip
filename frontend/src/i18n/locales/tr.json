@@ -208,7 +208,7 @@
   },
   "scans": {
     "title": "IP Tarama",
-    "premium_required": "Bu özellik <bold>premium</bold> üyelik gerektiriyor. Premium'a geçmek için lütfen bizimle iletişime geçin.",
+    "premium_required": "Bu özellik <bold>premium</bold> üyelik gerektiriyor. Premium'a geçmek için onur@kayakiran.net adresine e-posta gönderebilirsiniz.",
     "new_scan": "Yeni Tarama",
     "cidr_list_title": "CIDR Listesi",
     "quick_scan_placeholder": "Hızlı Tara: bir IP veya CIDR yazın (örn. 8.8.8.8)",

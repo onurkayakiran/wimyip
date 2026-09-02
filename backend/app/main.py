@@ -15,6 +15,7 @@ from app.api.routes import (
     prefixes,
     scans,
     search,
+    seo,
     stats,
 )
 from app.db.mongo import ensure_indexes
@@ -47,3 +48,4 @@ app.include_router(admin.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
 app.include_router(monitors.router, prefix="/api")
 app.include_router(scans.router, prefix="/api")
+app.include_router(seo.router, prefix="/api")

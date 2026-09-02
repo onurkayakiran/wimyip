@@ -1,0 +1,28 @@
+# wimyip.net
+
+> wimyip.net is a free, publicly searchable archive of Internet
+> infrastructure data: IP addresses, ASNs (Autonomous Systems), IP
+> prefixes/CIDR blocks, domains, and nameservers, with historical WHOIS
+> ownership records, BGP announcement history, PeeringDB profiles, DNS
+> record history (A/AAAA/NS/MX/TXT), and PTR (reverse DNS) records.
+
+The site is a client-rendered web app, but pages under the paths below
+are served as fully rendered, self-contained HTML (no JavaScript
+required) to crawlers and automated clients, so their content can be
+read directly.
+
+## Content
+
+- IP address lookup (ASN, announced prefix, PTR record, BGP history): `/ip/{ip}`
+- Autonomous System (ASN) lookup (org info, peering, announced prefixes, WHOIS history): `/asn/{asn}`
+- IP prefix / CIDR lookup (RIR allocation, WHOIS ownership history): `/prefix/{cidr}`
+- Domain lookup (DNS record history, WHOIS-adjacent metadata): `/domain/{domain}`
+- Nameserver lookup (IP history, domains it serves): `/nameserver/{nameserver}`
+
+## Notes
+
+- Data is sourced from public RIR/RDAP registries, RIPEstat BGP data,
+  PeeringDB, Certificate Transparency logs, and active DNS/PTR
+  resolution — not from any private or paywalled source.
+- robots.txt: https://wimyip.net/robots.txt
+- sitemap.xml: https://wimyip.net/sitemap.xml

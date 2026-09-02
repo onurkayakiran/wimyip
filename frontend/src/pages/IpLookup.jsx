@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { lookupIp, refreshIpBgp } from '../api'
 import HistoryTable, { formatDate } from '../components/HistoryTable'
 import { ErrorBlock, Loading } from '../components/StatusBlock'
+import useSeoMeta from '../hooks/useSeoMeta'
 
 export default function IpLookup() {
   const { t } = useTranslation()
@@ -12,6 +13,12 @@ export default function IpLookup() {
   const [error, setError] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
   const [refreshNote, setRefreshNote] = useState(null)
+
+  useSeoMeta({
+    title: ip,
+    description: `IP address lookup for ${ip}: announcing ASN, BGP history, PTR record and containing IP prefix.`,
+    path: `/ip/${ip}`,
+  })
 
   function load() {
     setError(null)

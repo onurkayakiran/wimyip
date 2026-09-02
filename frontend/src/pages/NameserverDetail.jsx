@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { getNameserverDomains, getNameserverHistory } from '../api'
 import HistoryTable, { formatDate } from '../components/HistoryTable'
 import { ErrorBlock, Loading } from '../components/StatusBlock'
+import useSeoMeta from '../hooks/useSeoMeta'
 
 export default function NameserverDetail() {
   const { t } = useTranslation()
@@ -12,6 +13,12 @@ export default function NameserverDetail() {
   const [history, setHistory] = useState(null)
   const [domains, setDomains] = useState(null)
   const [error, setError] = useState(null)
+
+  useSeoMeta({
+    title: nameserver,
+    description: `Nameserver history for ${nameserver}: IP address history and the domains it serves.`,
+    path: `/nameserver/${nameserver}`,
+  })
 
   useEffect(() => {
     setHistory(null)

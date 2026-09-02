@@ -208,7 +208,7 @@
   },
   "scans": {
     "title": "IP-Scan",
-    "premium_required": "Diese Funktion erfordert eine <bold>Premium</bold>-Mitgliedschaft. Bitte kontaktieren Sie uns, um auf Premium zu wechseln.",
+    "premium_required": "Diese Funktion erfordert eine <bold>Premium</bold>-Mitgliedschaft. Um auf Premium zu wechseln, senden Sie bitte eine E-Mail an onur@kayakiran.net.",
     "new_scan": "Neuer Scan",
     "cidr_list_title": "CIDR-Liste",
     "quick_scan_placeholder": "Schnellscan: IP oder CIDR eingeben (z. B. 8.8.8.8)",

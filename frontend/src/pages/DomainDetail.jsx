@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router-dom'
 import { getDomain, getDomainHistory, refreshDomainDns } from '../api'
 import HistoryTable, { formatDate } from '../components/HistoryTable'
 import { ErrorBlock, Loading } from '../components/StatusBlock'
+import useSeoMeta from '../hooks/useSeoMeta'
 
 export default function DomainDetail() {
   const { t } = useTranslation()
@@ -13,6 +14,12 @@ export default function DomainDetail() {
   const [history, setHistory] = useState(null)
   const [error, setError] = useState(null)
   const [refreshing, setRefreshing] = useState(false)
+
+  useSeoMeta({
+    title: domain,
+    description: `DNS record history (A/AAAA, NS, MX, TXT) and archive metadata for the domain ${domain}.`,
+    path: `/domain/${domain}`,
+  })
 
   function load() {
     setError(null)

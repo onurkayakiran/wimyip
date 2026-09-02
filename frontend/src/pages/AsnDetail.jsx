@@ -13,6 +13,7 @@ import {
 } from '../api'
 import HistoryTable, { formatDate } from '../components/HistoryTable'
 import { ErrorBlock, Loading } from '../components/StatusBlock'
+import useSeoMeta from '../hooks/useSeoMeta'
 
 export default function AsnDetail() {
   const { t } = useTranslation()
@@ -25,6 +26,13 @@ export default function AsnDetail() {
   const [peeringdb, setPeeringdb] = useState(null)
   const [error, setError] = useState(null)
   const [busy, setBusy] = useState(null)
+
+  const orgName = peeringdb?.org_name || history?.[0]?.org_name
+  useSeoMeta({
+    title: `AS${asn}${orgName ? ` — ${orgName}` : ''}`,
+    description: `WHOIS ownership history, BGP-announced prefixes and peering data for Autonomous System AS${asn}${orgName ? ` (${orgName})` : ''}.`,
+    path: `/asn/${asn}`,
+  })
 
   function load() {
     setError(null)
