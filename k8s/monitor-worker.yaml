@@ -17,7 +17,7 @@ spec:
         - name: ghcr-secret
       containers:
         - name: monitor-worker
-          image: ghcr.io/onurkayakiran/wimyip-monitor-worker:cb1a4c8f2d6e1015c79cee4544f0ccacf8bca9d7
+          image: ghcr.io/onurkayakiran/wimyip-monitor-worker:8039ca6dab6c54673c3a781d836febaa9cdcbd50
           command: ["celery", "-A", "app.tasks.celery_app", "worker", "--loglevel=info", "-Q", "monitor-checks", "--concurrency=4"]
           # ICMP ping icin ham soket gerekiyor - imaj SADECE python3
           # binary'sine setcap ile bu yetkiyi tanimis (bkz.
