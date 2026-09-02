@@ -8,7 +8,16 @@ from app.db.mongo import get_db
 # sayfalari zaten bot'lara tam render ediliyor (bkz. seo.py) - bu yuzden
 # ASN'ler icin canli, veritabanindan uretilen bir sitemap ekleniyor.
 # Sitemap protokolu dosya basina 50.000 URL siniri koyuyor; ASN sayisi
-# bunu asarsa otomatik olarak bir sitemap-index + parcalara bolunuyor.
+# bunu asarsa parcalara bolunuyor.
+#
+# ONEMLI: sitemap protokolu bir <sitemapindex>'in SADECE <urlset> (gercek
+# sayfa listesi) dosyalarina referans vermesine izin veriyor, baska bir
+# <sitemapindex>'e DEGIL - Google bunu "sitemap index'e baska bir sitemap
+# index referans veriyor" hatasiyla reddediyor (ilk tasarimda /sitemap.xml
+# -> /sitemap-asns.xml -> /sitemap-asns-N.xml seklinde 3 katmanli bir yapi
+# vardi, gercek Search Console hatasiyla yakalandi). Bu yuzden /sitemap.xml
+# artik TUM parcalari DOGRUDAN listeliyor - ayri bir /sitemap-asns.xml
+# index katmani yok.
 
 router = APIRouter()
 
@@ -26,18 +35,18 @@ def _sitemapindex(locs: list[str]) -> str:
     return f'{_XML_HEADER}<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">{entries}</sitemapindex>'
 
 
-@router.get("/sitemap-asns.xml")
-async def sitemap_asns():
+async def _asn_shard_count() -> int:
     db = get_db()
     total = await db.asns.count_documents({})
+    return max(1, -(-total // SHARD_SIZE))  # ceil division, en az 1 parca
 
-    if total <= SHARD_SIZE:
-        cursor = db.asns.find({}, {"asn": 1}).sort("asn", 1)
-        locs = [f"{SITE_ORIGIN}/asn/{doc['asn']}" async for doc in cursor]
-        return Response(_urlset(locs), media_type="application/xml")
 
-    shard_count = -(-total // SHARD_SIZE)  # ceil division
-    locs = [f"{SITE_ORIGIN}/sitemap-asns-{n}.xml" for n in range(1, shard_count + 1)]
+@router.get("/sitemap.xml")
+async def sitemap_index():
+    shard_count = await _asn_shard_count()
+    locs = [f"{SITE_ORIGIN}/sitemap-pages.xml"] + [
+        f"{SITE_ORIGIN}/sitemap-asns-{n}.xml" for n in range(1, shard_count + 1)
+    ]
     return Response(_sitemapindex(locs), media_type="application/xml")
 
 
